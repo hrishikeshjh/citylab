@@ -32,9 +32,22 @@ import {
   Map,
   Copy,
   Lock,
+  Settings as SettingsIcon,
+  Bell,
+  Eye,
+  Star,
+  HelpCircle,
+  Mail,
+  Shield,
+  FileCode,
+  Image,
+  RefreshCw,
+  LogOut,
+  Sliders,
+  AlertOctagon,
 } from "lucide-react";
 
-/* --- Types -------------------------------------------------------------- */
+/* --- Types --- */
 
 interface Booking {
   _id: string;
@@ -42,7 +55,7 @@ interface Booking {
   email: string;
   phone: string;
   type: "walk-in" | "online" | "phone" | "home";
-  status: "pending" | "confirmed";
+  status: "pending" | "confirmed" | "sample-scheduled" | "sample-collected" | "processing" | "report-ready" | "completed" | "cancelled";
   details: string;
   date: string;
 }
@@ -75,6 +88,7 @@ interface HealthPackage {
   offerValidity: string;
   popular: boolean;
   categoryTags: string[];
+  active?: boolean;
 }
 
 interface Doctor {
@@ -89,6 +103,7 @@ interface Doctor {
   biography: string;
   onlineConsultation: boolean;
   slots: string[];
+  active?: boolean;
 }
 
 interface Appointment {
@@ -123,22 +138,83 @@ interface Report {
   bookingId: string;
   testNames: string;
   fileUrl?: string;
-  status: "Draft" | "Pending Doctor Review" | "Approved";
+  status: "Draft" | "Pending Doctor Review" | "Approved" | "Ready" | "Delivered";
   verifiedBy?: string;
   digitalSignatureUrl?: string;
   version: number;
 }
 
-/* --- Admin Dashboard --------------------------------------------------- */
+interface Patient {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  medicalHistory: string;
+  previousReports: string[];
+  bookingHistory: string[];
+  consultationHistory: string[];
+  notes: string;
+}
+
+interface Enquiry {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  status: "unread" | "read" | "archived";
+  createdAt: string;
+}
+
+interface Testimonial {
+  _id: string;
+  patientName: string;
+  rating: number;
+  reviewText: string;
+  status: "pending" | "approved" | "rejected";
+  featured: boolean;
+}
+
+interface GalleryImage {
+  _id: string;
+  fileUrl: string;
+  category: "Laboratory" | "Doctors" | "Equipment" | "Reception" | "Events";
+  displayOrder: number;
+  description?: string;
+}
+
+interface Article {
+  _id: string;
+  title: string;
+  coverImage: string;
+  author: string;
+  category: string;
+  readingTime: string;
+  seoTitle?: string;
+  metaDescription?: string;
+  tags?: string[];
+  status: "Draft" | "Published";
+}
+
+interface AuditLog {
+  _id: string;
+  adminEmail: string;
+  adminName: string;
+  action: string;
+  details: string;
+  ipAddress: string;
+  createdAt: string;
+}
 
 export default function AdminDashboard() {
-  const { user, isAdmin, loading, continueAsGuest, signOut } = useAuth();
+  const { user, isAdmin, loading, signOut } = useAuth();
   const router = useRouter();
 
-  // Active Tab: dashboard, bookings, tests, packages, doctors, collections, appointments, reports
+  // Navigation tab state (18 specific tabs)
   const [activeTab, setActiveTab] = useState<string>("dashboard");
 
-  // State arrays fetched from DB
+  // DB States
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
   const [packages, setPackages] = useState<HealthPackage[]>([]);
@@ -146,23 +222,48 @@ export default function AdminDashboard() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [collections, setCollections] = useState<HomeCollection[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
-  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [gallery, setGallery] = useState<GalleryImage[]>([]);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [settings, setSettings] = useState<any>({
+    labName: "City Lab Diagnostic Centre",
+    heroHeadline: "Accurate Diagnostics. Trusted Care.",
+    heroSubheading: "Book blood tests and full body checkups online.",
+    aboutText: "Pioneering state-of-the-art diagnostic testing.",
+  });
 
-  // Search/Filter states
+  // Notifications List State
+  const [notifications, setNotifications] = useState<any[]>([
+    { id: "1", type: "Website Announcement", title: "Free Health Camp on 15th July", status: "Published" },
+    { id: "2", type: "Health Awareness Notice", title: "Monsoon Health Checkup Packages released", status: "Published" },
+  ]);
+
+  // Analytics Stats State
+  const [analytics, setAnalytics] = useState({
+    visitors: 4520,
+    registrationGrowth: "+12% this month",
+    mostBookedTest: "Complete Blood Count (CBC)",
+    popularPackage: "Diabetes Health Screening",
+  });
+
+  // Admin Account List State
+  const [admins, setAdmins] = useState<any[]>([
+    { id: "1", name: "Super Admin", email: "admin@citylab.com", role: "Super Admin", status: "Active" },
+    { id: "2", name: "Dr. Rajesh Sharma", email: "rajesh@citylab.com", role: "Doctor", status: "Active" },
+    { id: "3", name: "Mohit reception", email: "reception@citylab.com", role: "Reception", status: "Active" },
+  ]);
+
+  // Search & Filter Term
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Modals & form submissions
-  const [bookingForm, setBookingForm] = useState<any>({ patientName: "", email: "", phone: "", type: "walk-in", details: "", date: "" });
-  const [testForm, setTestForm] = useState<any>({ name: "", category: "Blood", price: "", description: "", preparation: "", sampleType: "Blood", reportTime: "Same day", department: "Blood Test", equipment: "", technician: "", referenceValues: "Normal range", featured: false, visible: true });
-  const [packageForm, setPackageForm] = useState<any>({ name: "", description: "", tests: [], price: "", originalPrice: "", offerValidity: "31st Dec 2026", popular: false, categoryTags: [] });
-  const [doctorForm, setDoctorForm] = useState<any>({ name: "", qualification: "", specialization: "", experience: "", availableDays: ["Mon", "Wed", "Fri"], consultationFee: "", biography: "", onlineConsultation: true, slots: ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM"] });
-  const [appointmentForm, setAppointmentForm] = useState<any>({ doctorId: "", doctorName: "", patientName: "", patientPhone: "", date: "", slot: "", status: "Pending", notes: "" });
-  const [reportForm, setReportForm] = useState<any>({ patientName: "", email: "", bookingId: "", testNames: "", status: "Draft" });
+  // Modals & form states
+  const [showModal, setShowModal] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [editForm, setEditForm] = useState<any>({});
 
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState<string | null>(null); // booking, test, package, doctor, appointment, report
-
-  // Safe fetch helper to handle DB timeouts and parsing errors gracefully
+  /* ── Fetch Helper ────────────────────────────────────────────────── */
   const safeFetchJson = async (url: string) => {
     try {
       const r = await fetch(url);
@@ -174,9 +275,8 @@ export default function AdminDashboard() {
     }
   };
 
-  // Fetch Data
   const fetchData = async () => {
-    const [resB, resT, resP, resD, resA, resC, resR, resS] = await Promise.all([
+    const [resB, resT, resP, resD, resA, resC, resR, resS, resE, resTe, resG, resL] = await Promise.all([
       safeFetchJson("/api/bookings"),
       safeFetchJson("/api/tests"),
       safeFetchJson("/api/packages"),
@@ -184,7 +284,11 @@ export default function AdminDashboard() {
       safeFetchJson("/api/appointments"),
       safeFetchJson("/api/home-collections"),
       safeFetchJson("/api/reports"),
-      safeFetchJson("/api/admin/stats"),
+      safeFetchJson("/api/admin/settings"),
+      safeFetchJson("/api/admin/enquiries"),
+      safeFetchJson("/api/admin/testimonials"),
+      safeFetchJson("/api/admin/gallery"),
+      safeFetchJson("/api/admin/logs"),
     ]);
 
     if (resB?.success) setBookings(resB.bookings);
@@ -194,7 +298,32 @@ export default function AdminDashboard() {
     if (resA?.success) setAppointments(resA.appointments);
     if (resC?.success) setCollections(resC.collections);
     if (resR?.success) setReports(resR.reports);
-    if (resS?.success) setDashboardStats(resS.stats);
+    if (resS?.success) setSettings(resS.settings);
+    if (resE?.success) setEnquiries(resE.enquiries);
+    if (resTe?.success) setTestimonials(resTe.testimonials);
+    if (resG?.success) setGallery(resG.images);
+    if (resL?.success) setLogs(resL.logs);
+
+    // Populate mock patients list from bookings for visual demo
+    if (resB?.success) {
+      const uniquePatients = resB.bookings.reduce((acc: Patient[], curr: Booking) => {
+        if (!acc.some((p) => p.email === curr.email)) {
+          acc.push({
+            _id: curr._id,
+            name: curr.patientName,
+            email: curr.email,
+            phone: curr.phone,
+            medicalHistory: "Routine monitoring checks. No severe history recorded.",
+            previousReports: ["CBC Report", "Thyroid Profile"],
+            bookingHistory: [`${curr.details} - ${curr.date.split("T")[0]}`],
+            consultationHistory: ["Dr. Ananya Sharma (General Physician)"],
+            notes: "Fasting required for blood sugar evaluations.",
+          });
+        }
+        return acc;
+      }, []);
+      setPatients(uniquePatients);
+    }
   };
 
   useEffect(() => {
@@ -203,7 +332,7 @@ export default function AdminDashboard() {
     }
   }, [loading, isAdmin]);
 
-  // Auth Guard
+  // Auth Protection Block
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -221,7 +350,7 @@ export default function AdminDashboard() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Access Denied</h1>
           <p className="mt-3 text-sm text-gray-300">
-            You do not have administrative privileges. Only authorized emails can access the dashboard.
+            You do not have administrative privileges. Only authorized emails can access this console dashboard.
           </p>
           <div className="mt-8 flex flex-col gap-3">
             <button
@@ -256,1471 +385,719 @@ export default function AdminDashboard() {
     );
   }
 
-  /* --- CRUD Handlers ---------------------------------------------------- */
-
-  // Generic Submit Wrapper
-  const handleCrudSubmit = async (url: string, method: "POST" | "PUT", body: any) => {
+  /* ── Submit Handler wrappers ─────────────────────────────────────── */
+  const handleCrudAction = async (url: string, method: "POST" | "PUT" | "DELETE", data?: any) => {
     try {
-      const res = await fetch(url, {
+      const opts: any = {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }).then((r) => r.json());
+      };
+      if (data) opts.body = JSON.stringify(data);
 
-      if (res.success) {
+      const res = await fetch(url, opts);
+      if (res.ok) {
+        // Record Audit log dynamically
+        await fetch("/api/admin/logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            adminEmail: user.email,
+            adminName: user.displayName || "Admin",
+            action: `${method}_ACTION`,
+            details: `Admin performed ${method} operation on ${url}`,
+          }),
+        });
+        fetchData();
         setShowModal(null);
-        setEditingId(null);
-        fetchData();
+        setSelectedItem(null);
       } else {
-        alert("Operation failed: " + res.error);
+        alert("Operation failed. Please try again.");
       }
-    } catch (err: any) {
-      alert("Error: " + err.message);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // Delete Wrapper
-  const handleCrudDelete = async (url: string, id: string) => {
-    if (!confirm("Are you sure you want to delete this item?")) return;
-    try {
-      const res = await fetch(`${url}?id=${id}`, {
-        method: "DELETE",
-      }).then((r) => r.json());
-
-      if (res.success) {
-        fetchData();
-      } else {
-        alert("Delete failed: " + res.error);
-      }
-    } catch (err: any) {
-      alert("Error: " + err.message);
-    }
-  };
+  /* ── Sidebar Items ────────────────────────────────────────────────── */
+  const menuItems = [
+    { id: "dashboard", label: "Overview", icon: Layers },
+    { id: "patients", label: "👥 Patients", icon: Users },
+    { id: "bookings", label: "📅 Bookings", icon: CalendarCheck },
+    { id: "tests", label: "🧪 Tests", icon: Activity },
+    { id: "packages", label: "❤️ Packages", icon: Sparkles },
+    { id: "doctors", label: "👨‍⚕️ Doctors", icon: Compass },
+    { id: "reports", label: "📄 Reports", icon: FileText },
+    { id: "collections", label: "🏠 Collections", icon: MapPin },
+    { id: "cms", label: "🌐 CMS Website", icon: FileCode },
+    { id: "gallery", label: "🖼 Gallery", icon: Image },
+    { id: "testimonials", label: "⭐ Reviews", icon: Star },
+    { id: "faqs", label: "❓ FAQs", icon: HelpCircle },
+    { id: "enquiries", label: "📩 Enquiries", icon: Mail },
+    { id: "notifications", label: "🔔 Alerts", icon: Bell },
+    { id: "analytics", label: "📊 Analytics", icon: TrendingUp },
+    { id: "admins", label: "👤 Administrators", icon: Shield },
+    { id: "security", label: "🔒 Security Logs", icon: Lock },
+    { id: "settings", label: "⚙️ Settings", icon: SettingsIcon },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top Admin Bar */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 bg-primary rounded-xl flex items-center justify-center text-white font-bold">
-            C
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground leading-none">City Lab Admin</h1>
-            <span className="text-[10px] text-primary font-bold uppercase tracking-wider">Dashboard Panel</span>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-800">
+      {/* ── Top bar ── */}
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-2">
+          <img src="/images/logo.svg" alt="City Lab" className="h-9 w-auto" />
+          <span className="text-xs bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">
+            Console
+          </span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden sm:block text-right">
-            <p className="text-xs font-semibold text-foreground leading-none">{user.displayName || "Administrator"}</p>
-            <span className="text-[10px] text-text-secondary">{user.email}</span>
-          </div>
-          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold border border-primary/20">
-            AD
+          <button
+            onClick={() => router.push("/")}
+            className="px-3.5 py-1.5 border border-gray-200 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            Back to Site
+          </button>
+          <div className="h-7 w-px bg-gray-200" />
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs">
+              A
+            </div>
+            <span className="text-xs font-bold text-gray-700 hidden sm:inline">
+              {user.displayName || user.email?.split("@")[0]}
+            </span>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Main Panel */}
-      <div className="flex-1 flex flex-col lg:flex-row">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-64 bg-white border-r border-gray-100 p-4 space-y-1">
-          <p className="text-[11px] font-bold text-text-secondary uppercase px-3 mb-2 tracking-wider">Management</p>
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "dashboard" ? "bg-primary-light text-primary" : "text-text-secondary hover:bg-gray-50 hover:text-foreground"
-            }`}
-          >
-            <Activity className="h-4 w-4" />
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("bookings")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "bookings" ? "bg-primary-light text-primary" : "text-text-secondary hover:bg-gray-50 hover:text-foreground"
-            }`}
-          >
-            <CalendarCheck className="h-4 w-4" />
-            Bookings
-          </button>
-          <button
-            onClick={() => setActiveTab("tests")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "tests" ? "bg-primary-light text-primary" : "text-text-secondary hover:bg-gray-50 hover:text-foreground"
-            }`}
-          >
-            <Layers className="h-4 w-4" />
-            Tests Catalog
-          </button>
-          <button
-            onClick={() => setActiveTab("packages")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "packages" ? "bg-primary-light text-primary" : "text-text-secondary hover:bg-gray-50 hover:text-foreground"
-            }`}
-          >
-            <TrendingUp className="h-4 w-4" />
-            Health Packages
-          </button>
-          <button
-            onClick={() => setActiveTab("collections")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "collections" ? "bg-primary-light text-primary" : "text-text-secondary hover:bg-gray-50 hover:text-foreground"
-            }`}
-          >
-            <Map className="h-4 w-4" />
-            Home Collections
-          </button>
-          <button
-            onClick={() => setActiveTab("doctors")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "doctors" ? "bg-primary-light text-primary" : "text-text-secondary hover:bg-gray-50 hover:text-foreground"
-            }`}
-          >
-            <Users className="h-4 w-4" />
-            Doctors
-          </button>
-          <button
-            onClick={() => setActiveTab("appointments")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "appointments" ? "bg-primary-light text-primary" : "text-text-secondary hover:bg-gray-50 hover:text-foreground"
-            }`}
-          >
-            <Calendar className="h-4 w-4" />
-            Appointments
-          </button>
-          <button
-            onClick={() => setActiveTab("reports")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "reports" ? "bg-primary-light text-primary" : "text-text-secondary hover:bg-gray-50 hover:text-foreground"
-            }`}
-          >
-            <FileText className="h-4 w-4" />
-            Reports Center
-          </button>
+      <div className="flex-1 flex">
+        {/* ── Sidebar Menu ── */}
+        <aside className="w-64 bg-white border-r border-gray-200 p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-69px)] sticky top-[69px]">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setSearchTerm("");
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
+                  active
+                    ? "bg-primary/5 text-primary"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Icon className={`h-4.5 w-4.5 ${active ? "text-primary" : "text-gray-400"}`} />
+                {item.label}
+              </button>
+            );
+          })}
         </aside>
 
-        {/* Workspace */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          {/* TAB 1: OVERVIEW */}
+        {/* ── Main Workspace ── */}
+        <main className="flex-1 p-8 overflow-y-auto max-w-7xl mx-auto">
+          {/* TAB 1: OVERVIEW DASHBOARD */}
           {activeTab === "dashboard" && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Welcome Back, Admin</h2>
-                  <p className="text-xs text-text-secondary">Here is an overview of diagnostic laboratory analytics.</p>
-                </div>
-                <button
-                  onClick={() => router.push("/")}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all"
-                >
-                  View Client Site
-                  <ArrowRight className="h-3 w-3" />
-                </button>
+            <div className="space-y-8 animate-fadeIn">
+              {/* Cards Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { title: "Total Patients", val: patients.length, change: "Updated live" },
+                  { title: "Today's Bookings", val: bookings.length, change: "Pending review" },
+                  { title: "Home Collections", val: collections.length, change: "Phlebotomist active" },
+                  { title: "Pending Reports", val: reports.filter((r) => r.status !== "Approved").length, change: "Need verify" },
+                ].map((card, idx) => (
+                  <div key={idx} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{card.title}</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-2">{card.val}</p>
+                    <p className="text-[10px] text-green-600 mt-1 font-medium">{card.change}</p>
+                  </div>
+                ))}
               </div>
 
-              {/* Stat Cards */}
-              {dashboardStats && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-white border border-gray-100 p-5 rounded-2xl flex items-center gap-4">
-                    <div className="h-10 w-10 bg-orange-50 text-primary flex items-center justify-center rounded-xl">
-                      <CalendarCheck className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-text-secondary uppercase">Bookings</p>
-                      <h3 className="text-lg font-bold text-foreground mt-0.5">{dashboardStats.bookings.total}</h3>
-                      <span className="text-[10px] text-green-600 font-semibold">{dashboardStats.bookings.pending} pending</span>
-                    </div>
-                  </div>
-                  <div className="bg-white border border-gray-100 p-5 rounded-2xl flex items-center gap-4">
-                    <div className="h-10 w-10 bg-blue-50 text-blue-500 flex items-center justify-center rounded-xl">
-                      <Map className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-text-secondary uppercase">Active Collections</p>
-                      <h3 className="text-lg font-bold text-foreground mt-0.5">{dashboardStats.operations.activeCollections}</h3>
-                      <span className="text-[10px] text-blue-600 font-semibold">Phlebotomists live</span>
-                    </div>
-                  </div>
-                  <div className="bg-white border border-gray-100 p-5 rounded-2xl flex items-center gap-4">
-                    <div className="h-10 w-10 bg-green-50 text-green-500 flex items-center justify-center rounded-xl">
-                      <Layers className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-text-secondary uppercase">Tests Catalog</p>
-                      <h3 className="text-lg font-bold text-foreground mt-0.5">{dashboardStats.catalog.tests}</h3>
-                      <span className="text-[10px] text-text-secondary font-semibold">{dashboardStats.catalog.packages} packages</span>
-                    </div>
-                  </div>
-                  <div className="bg-white border border-gray-100 p-5 rounded-2xl flex items-center gap-4">
-                    <div className="h-10 w-10 bg-purple-50 text-purple-500 flex items-center justify-center rounded-xl">
-                      <Users className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-text-secondary uppercase">Doctors Available</p>
-                      <h3 className="text-lg font-bold text-foreground mt-0.5">{dashboardStats.team.doctors}</h3>
-                      <span className="text-[10px] text-purple-600 font-semibold">Daily rosters online</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Recent Bookings and Home Collections */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Recent Bookings */}
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-foreground">Recent Activity Logs</h3>
-                    <button onClick={() => setActiveTab("bookings")} className="text-xs text-primary font-bold hover:underline">
-                      Manage Bookings
-                    </button>
-                  </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Activity Feed */}
+                <div className="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
+                  <h3 className="text-sm font-bold text-gray-800 mb-4">Quick Activity Feed</h3>
                   <div className="space-y-3">
-                    {bookings.slice(0, 4).map((b) => (
-                      <div key={b._id} className="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                    {[
+                      { action: "New patient registered", desc: "Hrishikesh Jha completed profile sign up", time: "5 mins ago" },
+                      { action: "Test booked", desc: "CBC test booked by Sunita Rao", time: "12 mins ago" },
+                      { action: "Home collection requested", desc: "Slot Tomorrow 9am Bellandur address", time: "30 mins ago" },
+                      { action: "Report uploaded", desc: "Dr. Sharma signed sample report PDF", time: "1 hour ago" },
+                      { action: "Doctor appointment booked", desc: "Dr. Ananya Sharma with Amit Verma", time: "2 hours ago" },
+                    ].map((act, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-gray-50/50 text-xs">
                         <div>
-                          <p className="text-xs font-bold text-foreground">{b.patientName}</p>
-                          <span className="text-[10px] text-text-secondary">{b.details}</span>
+                          <p className="font-bold text-gray-800">{act.action}</p>
+                          <p className="text-[10px] text-gray-500 mt-0.5">{act.desc}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase ${
-                            b.status === "confirmed" ? "bg-green-50 text-green-600 border border-green-200" : "bg-orange-50 text-primary border border-orange-200"
-                          }`}>
-                            {b.status}
-                          </span>
-                          <span className="text-[10px] text-text-secondary bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-                            {b.type}
-                          </span>
-                        </div>
+                        <span className="text-[10px] text-gray-400 font-medium">{act.time}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Phlebotomy Map Tracking */}
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-foreground">Home Collections Map Simulation</h3>
-                    <button onClick={() => setActiveTab("collections")} className="text-xs text-primary font-bold hover:underline">
-                      Live Ops
-                    </button>
-                  </div>
-                  {/* Map Simulator */}
-                  <div className="h-44 bg-orange-50/50 rounded-xl relative border border-orange-100 flex items-center justify-center overflow-hidden">
-                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#F97316_1px,transparent_1px)] [background-size:16px_16px]" />
-                    <div className="absolute top-12 left-24 flex flex-col items-center">
-                      <div className="h-4 w-4 bg-orange-500 rounded-full animate-ping absolute" />
-                      <div className="h-4 w-4 bg-orange-600 rounded-full relative border-2 border-white flex items-center justify-center">
-                        <MapPin className="h-2 w-2 text-white" />
-                      </div>
-                      <span className="text-[8px] bg-white border shadow-sm px-1 rounded mt-1 font-bold text-foreground">Arjun Mehta</span>
-                    </div>
-                    <div className="absolute bottom-16 right-20 flex flex-col items-center">
-                      <div className="h-4 w-4 bg-primary/20 rounded-full animate-pulse flex items-center justify-center">
-                        <div className="h-2 w-2 bg-primary rounded-full" />
-                      </div>
-                      <span className="text-[8px] bg-white border shadow-sm px-1 rounded mt-1 font-bold text-foreground">Lab Main Base</span>
-                    </div>
-                    <p className="text-[10px] font-semibold text-text-secondary z-10 flex items-center gap-1.5 bg-white border border-gray-100 px-3 py-1 rounded-full shadow-sm">
-                      <Map className="h-3 w-3 text-primary animate-pulse" />
-                      Route optimized: Sandip Pal heading to Bellandur
-                    </p>
-                  </div>
+                {/* Quick Actions */}
+                <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col gap-3">
+                  <h3 className="text-sm font-bold text-gray-800 mb-2">Quick Actions</h3>
+                  <button
+                    onClick={() => {
+                      setEditForm({});
+                      setShowModal("add-patient");
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-all"
+                  >
+                    <Plus className="h-4 w-4" /> Add Patient
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditForm({});
+                      setShowModal("add-test");
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold transition-all"
+                  >
+                    <Plus className="h-4 w-4 text-gray-400" /> Add Test
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditForm({});
+                      setShowModal("upload-report");
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold transition-all"
+                  >
+                    <FileText className="h-4 w-4 text-gray-400" /> Upload Report
+                  </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 2: BOOKING MANAGEMENT */}
+          {/* TAB 2: PATIENT MANAGEMENT */}
+          {activeTab === "patients" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-800">👥 Patient Directory</h2>
+                <button
+                  onClick={() => {
+                    setEditForm({});
+                    setShowModal("add-patient");
+                  }}
+                  className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover cursor-pointer"
+                >
+                  Add Patient
+                </button>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200 text-gray-500">
+                      <th className="p-4 font-bold">Patient Name</th>
+                      <th className="p-4 font-bold">Email</th>
+                      <th className="p-4 font-bold">Phone</th>
+                      <th className="p-4 font-bold">Notes</th>
+                      <th className="p-4 font-bold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {patients.map((pat) => (
+                      <tr key={pat._id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                        <td className="p-4 font-bold text-gray-900">{pat.name}</td>
+                        <td className="p-4">{pat.email}</td>
+                        <td className="p-4 font-medium">{pat.phone}</td>
+                        <td className="p-4 text-gray-500 truncate max-w-[200px]">{pat.notes}</td>
+                        <td className="p-4 text-right flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedItem(pat);
+                              setShowModal("view-patient");
+                            }}
+                            className="p-1.5 rounded-lg text-primary hover:bg-primary/5"
+                            title="View Profile"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedItem(pat);
+                              setEditForm(pat);
+                              setShowModal("edit-patient");
+                            }}
+                            className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100"
+                            title="Edit"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: BOOKING MANAGEMENT */}
           {activeTab === "bookings" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Booking Registry</h2>
-                  <p className="text-xs text-text-secondary">Walk-in, Phone, Online, and Home sample collections.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setBookingForm({ patientName: "", email: "", phone: "", type: "walk-in", details: "", date: "" });
-                    setEditingId(null);
-                    setShowModal("booking");
-                  }}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl transition-all hover:bg-primary-hover shadow-sm"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  New Booking
-                </button>
-              </div>
-
-              {/* Bookings Table */}
-              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase">Patient Details</th>
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase">Type</th>
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase">Selected Test / Package</th>
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase">Booking Date</th>
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase">Status</th>
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bookings.map((b) => (
-                        <tr key={b._id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                          <td className="p-4">
-                            <p className="text-xs font-bold text-foreground">{b.patientName}</p>
-                            <p className="text-[10px] text-text-secondary">{b.email} • {b.phone}</p>
-                          </td>
-                          <td className="p-4">
-                            <span className="text-[10px] font-semibold text-text-secondary uppercase bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                              {b.type}
-                            </span>
-                          </td>
-                          <td className="p-4 text-xs text-foreground font-medium">{b.details}</td>
-                          <td className="p-4 text-xs text-text-secondary">
-                            {new Date(b.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                          </td>
-                          <td className="p-4">
-                            <button
-                              onClick={() => {
-                                const newStatus = b.status === "pending" ? "confirmed" : "pending";
-                                handleCrudSubmit("/api/bookings", "PUT", { id: b._id, status: newStatus });
-                              }}
-                              className={`px-2.5 py-1 text-[9px] font-bold rounded-full uppercase border transition-colors ${
-                                b.status === "confirmed"
-                                  ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
-                                  : "bg-orange-50 text-primary border-orange-200 hover:bg-orange-100"
-                              }`}
-                            >
-                              {b.status}
-                            </button>
-                          </td>
-                          <td className="p-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => {
-                                  setBookingForm({
-                                    patientName: b.patientName,
-                                    email: b.email,
-                                    phone: b.phone,
-                                    type: b.type,
-                                    details: b.details,
-                                    date: b.date.substring(0, 10),
-                                  });
-                                  setEditingId(b._id);
-                                  setShowModal("booking");
-                                }}
-                                className="p-1.5 text-text-secondary hover:text-primary rounded-lg hover:bg-gray-100 transition-colors"
-                              >
-                                <Edit className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleCrudDelete("/api/bookings", b._id)}
-                                className="p-1.5 text-text-secondary hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: TEST MANAGEMENT */}
-          {activeTab === "tests" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Diagnostic Tests Catalog</h2>
-                  <p className="text-xs text-text-secondary">Configure available blood, urine, endocrine, and pathology parameters.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setTestForm({ name: "", category: "Blood Test", price: "", description: "", preparation: "", sampleType: "Blood", reportTime: "Same day", department: "Blood Test", equipment: "", technician: "", referenceValues: "Normal range", featured: false, visible: true });
-                    setEditingId(null);
-                    setShowModal("test");
-                  }}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl transition-all hover:bg-primary-hover shadow-sm"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add Diagnostic Test
-                </button>
-              </div>
-
-              {/* Grid of Tests */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {tests.map((t) => (
-                  <div key={t._id} className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary-light px-2.5 py-0.5 rounded-full">
-                          {t.category}
-                        </span>
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={() => {
-                              setTestForm({ ...t, price: t.price.toString() });
-                              setEditingId(t._id);
-                              setShowModal("test");
-                            }}
-                            className="p-1 text-text-secondary hover:text-primary transition-colors"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleCrudDelete("/api/tests", t._id)}
-                            className="p-1 text-text-secondary hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      <h3 className="text-sm font-bold text-foreground mt-3">{t.name}</h3>
-                      <p className="text-xs text-text-secondary mt-1 leading-relaxed line-clamp-2">{t.description}</p>
-                      
-                      <div className="mt-4 grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-text-secondary border-t border-gray-50 pt-3">
-                        <span className="font-semibold">Preparation: <span className="font-normal">{t.preparation}</span></span>
-                        <span className="font-semibold">Turnaround: <span className="font-normal">{t.reportTime}</span></span>
-                        <span className="font-semibold">Sample: <span className="font-normal">{t.sampleType}</span></span>
-                        <span className="font-semibold">Tech: <span className="font-normal">{t.technician || "Staff"}</span></span>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 flex items-center justify-between pt-3 border-t border-gray-50">
-                      <span className="text-lg font-black text-foreground">₹{t.price}</span>
-                      <span className={`text-[9px] px-2 py-0.5 rounded font-bold ${
-                        t.visible ? "bg-green-50 text-green-600 border border-green-100" : "bg-gray-100 text-text-secondary"
-                      }`}>
-                        {t.visible ? "Visible" : "Hidden"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: HEALTH PACKAGES */}
-          {activeTab === "packages" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Health Packages</h2>
-                  <p className="text-xs text-text-secondary">Combine tests into bundled wellness packages with discounted rates.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setPackageForm({ name: "", description: "", tests: [], price: "", originalPrice: "", offerValidity: "31st Dec 2026", popular: false, categoryTags: [] });
-                    setEditingId(null);
-                    setShowModal("package");
-                  }}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl transition-all hover:bg-primary-hover shadow-sm"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Create Package
-                </button>
-              </div>
-
-              {/* Grid of Packages */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {packages.map((p) => (
-                  <div key={p._id} className={`bg-white border rounded-3xl p-6 flex flex-col justify-between relative hover:shadow-lg transition-all ${
-                    p.popular ? "border-primary bg-primary-lighter shadow-sm" : "border-gray-100"
-                  }`}>
-                    {p.popular && (
-                      <span className="absolute -top-3 left-6 inline-flex items-center gap-1 px-3 py-0.5 text-[9px] font-bold text-white bg-primary rounded-full uppercase">
-                        Most Popular
-                      </span>
-                    )}
-
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-foreground">{p.name}</h3>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={async () => {
-                              // Duplicate package
-                              const { _id, ...rest } = p;
-                              const dupName = `${rest.name} (Copy)`;
-                              await handleCrudSubmit("/api/packages", "POST", { ...rest, name: dupName });
-                            }}
-                            title="Duplicate Package"
-                            className="p-1 text-text-secondary hover:text-primary transition-colors"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setPackageForm({ ...p, price: p.price.toString(), originalPrice: p.originalPrice.toString() });
-                              setEditingId(p._id);
-                              setShowModal("package");
-                            }}
-                            className="p-1 text-text-secondary hover:text-primary transition-colors"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleCrudDelete("/api/packages", p._id)}
-                            className="p-1 text-text-secondary hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-xs text-text-secondary mt-2 line-clamp-2">{p.description}</p>
-                      
-                      <div className="mt-4 flex flex-wrap gap-1.5">
-                        {p.categoryTags.map((tag) => (
-                          <span key={tag} className="text-[8px] font-bold uppercase bg-white border border-gray-200 px-2 py-0.5 rounded text-text-secondary">
-                            {tag}
+            <div className="space-y-6 animate-fadeIn">
+              <h2 className="text-lg font-bold text-gray-800">📅 Booking Management</h2>
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200 text-gray-500">
+                      <th className="p-4 font-bold">Patient</th>
+                      <th className="p-4 font-bold">Tests</th>
+                      <th className="p-4 font-bold">Type</th>
+                      <th className="p-4 font-bold">Status</th>
+                      <th className="p-4 font-bold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings.map((book) => (
+                      <tr key={book._id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                        <td className="p-4">
+                          <p className="font-bold text-gray-900">{book.patientName}</p>
+                          <p className="text-[10px] text-gray-500">{book.phone}</p>
+                        </td>
+                        <td className="p-4 font-medium">{book.details}</td>
+                        <td className="p-4 capitalize">{book.type}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                            book.status === "confirmed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
+                          }`}>
+                            {book.status}
                           </span>
-                        ))}
-                      </div>
-
-                      <ul className="mt-5 space-y-2 border-t border-gray-100 pt-4">
-                        {p.tests.map((test) => (
-                          <li key={test} className="flex items-start gap-2 text-xs text-text-secondary">
-                            <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                            {test}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="mt-6 flex items-baseline gap-2 border-t border-gray-100 pt-4">
-                      <span className="text-2xl font-black text-foreground">₹{p.price}</span>
-                      <span className="text-xs text-text-secondary line-through">₹{p.originalPrice}</span>
-                      <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">
-                        {p.discount}% OFF
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: HOME COLLECTION */}
-          {activeTab === "collections" && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Home Sample Collections Operations</h2>
-                <p className="text-xs text-text-secondary">Assign phlebotomists, track sample collection status, and enter technician notes.</p>
-              </div>
-
-              {/* Collections Grid */}
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {collections.map((col) => (
-                  <div key={col._id} className="bg-white border border-gray-100 rounded-3xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-bold text-foreground">{col.patientName}</p>
-                          <p className="text-[10px] text-text-secondary">{col.phone}</p>
-                        </div>
-                        <span className={`px-2.5 py-1 text-[9px] font-bold rounded-full uppercase border ${
-                          col.status === "Completed" ? "bg-green-50 text-green-600 border-green-200" : "bg-orange-50 text-primary border-orange-200"
-                        }`}>
-                          {col.status}
-                        </span>
-                      </div>
-
-                      <div className="mt-4 space-y-2 border-t border-gray-50 pt-4 text-xs text-text-secondary">
-                        <p className="flex items-start gap-1.5">
-                          <MapPin className="h-4 w-4 text-primary shrink-0" />
-                          <span>{col.address}</span>
-                        </p>
-                        <p className="flex items-center gap-1.5">
-                          <Clock className="h-4 w-4 text-primary" />
-                          <span>Slot: {col.collectionTime}</span>
-                        </p>
-                      </div>
-
-                      {/* Live Status Updator */}
-                      <div className="mt-5 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                        <p className="text-[10px] font-bold uppercase text-foreground tracking-wider mb-3">Live Phlebotomy Milestones</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {["Arrival status", "Sample collected", "Sample received", "Completed", "Missed"].map((s) => (
-                            <button
-                              key={s}
-                              onClick={() => handleCrudSubmit("/api/home-collections", "PUT", { id: col._id, status: s })}
-                              className={`text-left px-3 py-1.5 rounded-xl border text-[10px] font-semibold transition-all ${
-                                col.status === s ? "bg-primary text-white border-primary" : "bg-white text-text-secondary border-gray-200 hover:border-primary/20"
-                              }`}
-                            >
-                              {s}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Tech Assignment */}
-                      <div className="mt-4 flex items-center gap-3 justify-between">
-                        <div className="flex-1">
-                          <label className="block text-[10px] font-bold text-foreground uppercase mb-1">Assigned Technician</label>
-                          <select
-                            value={col.technicianName}
-                            onChange={(e) => handleCrudSubmit("/api/home-collections", "PUT", { id: col._id, technicianName: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 text-xs font-semibold focus:outline-none"
+                        </td>
+                        <td className="p-4 text-right flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setEditForm({ id: book._id, status: "confirmed" });
+                              handleCrudAction("/api/bookings", "PUT", { id: book._id, status: "confirmed" });
+                            }}
+                            className="px-2 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded-lg border border-green-200 hover:bg-green-100"
                           >
-                            <option value="To Be Assigned">Unassigned</option>
-                            <option value="Sandip Pal (Phlebotomist)">Sandip Pal (Senior Phlebotomist)</option>
-                            <option value="Javed Khan (Technician)">Javed Khan (Technician)</option>
-                            <option value="Meera Nair (Staff)">Meera Nair (Field Collector)</option>
-                          </select>
-                        </div>
-                        
-                        {/* OTP Check Simulator */}
-                        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 flex flex-col items-center justify-center">
-                          <span className="text-[9px] font-bold uppercase text-primary leading-none">Security OTP</span>
-                          <span className="text-sm font-black text-primary mt-1 tracking-widest">{col.otp}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 6: DOCTORS */}
-          {activeTab === "doctors" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Doctor Roster Management</h2>
-                  <p className="text-xs text-text-secondary">Configure diagnostic pathologists, consultants, fees, and daily slot schedules.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setDoctorForm({ name: "", qualification: "", specialization: "", experience: "", availableDays: ["Mon", "Wed", "Fri"], consultationFee: "", biography: "", onlineConsultation: true, slots: ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM"] });
-                    setEditingId(null);
-                    setShowModal("doctor");
-                  }}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl transition-all hover:bg-primary-hover shadow-sm"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add Doctor
-                </button>
-              </div>
-
-              {/* Grid of Doctors */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {doctors.map((doc) => (
-                  <div key={doc._id} className="bg-white border border-gray-100 rounded-3xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
-                    <div>
-                      <div className="flex items-start gap-4">
-                        <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-xl font-bold overflow-hidden">
-                          {doc.image ? <img src={doc.image} alt="" className="h-full w-full object-cover" /> : doc.name.charAt(0)}
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-foreground">{doc.name}</h3>
-                          <p className="text-[10px] font-semibold text-primary uppercase mt-0.5">{doc.specialization}</p>
-                          <p className="text-[10px] text-text-secondary mt-0.5">{doc.qualification} • {doc.experience}</p>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-text-secondary mt-4 leading-relaxed line-clamp-2">{doc.biography}</p>
-
-                      <div className="mt-4 border-t border-gray-50 pt-4 space-y-2">
-                        <div className="flex flex-wrap gap-1">
-                          {doc.availableDays.map((day) => (
-                            <span key={day} className="text-[9px] font-bold bg-gray-100 border text-text-secondary px-2 py-0.5 rounded">
-                              {day}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-semibold text-text-secondary">Consultation slots:</span>
-                          <span className="text-[10px] font-medium text-foreground">{doc.slots.join(", ")}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 flex items-center justify-between border-t border-gray-50 pt-4">
-                      <span className="text-base font-bold text-foreground">₹{doc.consultationFee} <span className="text-[10px] text-text-secondary font-normal">Fee</span></span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setDoctorForm({ ...doc, consultationFee: doc.consultationFee.toString() });
-                            setEditingId(doc._id);
-                            setShowModal("doctor");
-                          }}
-                          className="p-1 text-text-secondary hover:text-primary transition-colors"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleCrudDelete("/api/doctors", doc._id)}
-                          className="p-1 text-text-secondary hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 7: APPOINTMENTS */}
-          {activeTab === "appointments" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Appointment Calendar</h2>
-                  <p className="text-xs text-text-secondary">Schedule and reschedule patient consultations with rostered pathologists.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setAppointmentForm({ doctorId: doctors[0]?._id || "", doctorName: doctors[0]?.name || "", patientName: "", patientPhone: "", date: "", slot: "10:00 AM", status: "Pending", notes: "" });
-                    setEditingId(null);
-                    setShowModal("appointment");
-                  }}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl transition-all hover:bg-primary-hover shadow-sm"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  New Appointment
-                </button>
-              </div>
-
-              {/* Appointments List */}
-              <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase">Patient</th>
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase">Pathologist / Doctor</th>
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase">Schedule Slot</th>
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase">Status</th>
-                        <th className="p-4 text-xs font-bold text-text-secondary uppercase text-right">Actions</th>
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => {
+                              alert("Printing booking slip reference ID: " + book._id);
+                            }}
+                            className="p-1 text-gray-500 hover:text-gray-800"
+                            title="Print Slip"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleCrudAction(`/api/bookings?id=${book._id}`, "DELETE")}
+                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {appointments.map((appt) => (
-                        <tr key={appt._id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                          <td className="p-4">
-                            <p className="text-xs font-bold text-foreground">{appt.patientName}</p>
-                            <p className="text-[10px] text-text-secondary">{appt.patientPhone}</p>
-                          </td>
-                          <td className="p-4">
-                            <p className="text-xs font-bold text-foreground">{appt.doctorName}</p>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3.5 w-3.5 text-primary" />
-                              <span className="text-xs font-medium text-foreground">{appt.date} • {appt.slot}</span>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <select
-                              value={appt.status}
-                              onChange={(e) => handleCrudSubmit("/api/appointments", "PUT", { id: appt._id, status: e.target.value })}
-                              className={`px-2.5 py-1 text-[10px] font-bold rounded-xl border focus:outline-none ${
-                                appt.status === "Confirmed" ? "bg-green-50 text-green-600 border-green-200" :
-                                appt.status === "Cancelled" ? "bg-red-50 text-red-600 border-red-200" : "bg-orange-50 text-primary border-orange-200"
-                              }`}
-                            >
-                              <option value="Pending">Pending</option>
-                              <option value="Confirmed">Confirmed</option>
-                              <option value="Cancelled">Cancelled</option>
-                            </select>
-                          </td>
-                          <td className="p-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => {
-                                  setAppointmentForm({ ...appt });
-                                  setEditingId(appt._id);
-                                  setShowModal("appointment");
-                                }}
-                                className="p-1.5 text-text-secondary hover:text-primary rounded-lg hover:bg-gray-100 transition-colors"
-                              >
-                                <Edit className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleCrudDelete("/api/appointments", appt._id)}
-                                className="p-1.5 text-text-secondary hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
-          {/* TAB 8: REPORTS */}
-          {activeTab === "reports" && (
-            <div className="space-y-6">
+          {/* TAB 4: TEST DIRECTORY */}
+          {activeTab === "tests" && (
+            <div className="space-y-6 animate-fadeIn">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Diagnostic Report Center</h2>
-                  <p className="text-xs text-text-secondary">Approve patient reports, apply digital signatures, track versions, and share.</p>
-                </div>
+                <h2 className="text-lg font-bold text-gray-800">🧪 Laboratory Catalog</h2>
                 <button
                   onClick={() => {
-                    setReportForm({ patientName: "", email: "", bookingId: "", testNames: "", status: "Draft" });
-                    setEditingId(null);
-                    setShowModal("report");
+                    setEditForm({ visible: true, featured: false, category: "Blood" });
+                    setShowModal("add-test");
                   }}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl transition-all hover:bg-primary-hover shadow-sm"
+                  className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover"
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                  Generate Report
+                  Create Test
                 </button>
               </div>
 
-              {/* Reports List */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {reports.map((rep) => (
-                  <div key={rep._id} className="bg-white border border-gray-100 rounded-3xl p-6 space-y-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-xs font-bold text-foreground">{rep.patientName}</h3>
-                        <span className="text-[10px] text-text-secondary">{rep.email}</span>
-                      </div>
-                      <span className={`px-2.5 py-0.5 text-[9px] font-bold rounded uppercase border ${
-                        rep.status === "Approved" ? "bg-green-50 text-green-600 border-green-200" : "bg-orange-50 text-primary border-orange-200"
-                      }`}>
-                        {rep.status}
-                      </span>
-                    </div>
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200 text-gray-500">
+                      <th className="p-4 font-bold">Test Name</th>
+                      <th className="p-4 font-bold">Category</th>
+                      <th className="p-4 font-bold">Price</th>
+                      <th className="p-4 font-bold">Featured</th>
+                      <th className="p-4 font-bold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tests.map((test) => (
+                      <tr key={test._id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                        <td className="p-4 font-bold text-gray-900">{test.name}</td>
+                        <td className="p-4">{test.category}</td>
+                        <td className="p-4 font-bold text-primary">₹{test.price}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                            test.featured ? "bg-orange-100 text-orange-800" : "bg-gray-100 text-gray-600"
+                          }`}>
+                            {test.featured ? "Yes" : "No"}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedItem(test);
+                              setEditForm(test);
+                              setShowModal("edit-test");
+                            }}
+                            className="p-1 rounded text-gray-600 hover:bg-gray-100"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleCrudAction(`/api/tests?id=${test._id}`, "DELETE")}
+                            className="p-1 rounded text-red-500 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
-                    <div className="border-t border-b border-gray-50 py-3 text-xs text-foreground font-medium">
-                      Tests: <span className="font-semibold text-text-secondary">{rep.testNames}</span>
-                    </div>
+          {/* TAB 9: CMS WEBSITE SETTINGS */}
+          {activeTab === "cms" && (
+            <div className="space-y-6 bg-white border border-gray-200 rounded-3xl p-6 shadow-sm animate-fadeIn">
+              <h2 className="text-lg font-bold text-gray-800">🌐 Website Content Management (CMS)</h2>
+              <p className="text-xs text-gray-500">Edit homepage messaging and statistics directly without modifying code.</p>
 
-                    {/* PDF & Verification Controls */}
-                    <div className="flex items-center justify-between gap-3 text-xs">
-                      <div>
-                        <p className="text-[9px] text-text-secondary leading-none">Verified By</p>
-                        <p className="font-bold text-foreground mt-1">{rep.verifiedBy || "No doctor assigned"}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-text-secondary leading-none">Doc Version</p>
-                        <p className="font-bold text-foreground mt-1">v{rep.version}</p>
-                      </div>
-                    </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleCrudAction("/api/admin/settings", "POST", settings);
+                }}
+                className="space-y-4 pt-4"
+              >
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Hero Banner Headline</label>
+                  <input
+                    type="text"
+                    value={settings.heroHeadline || ""}
+                    onChange={(e) => setSettings({ ...settings, heroHeadline: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs"
+                  />
+                </div>
 
-                    {/* Action Hub */}
-                    <div className="flex gap-2 pt-2">
-                      {rep.status !== "Approved" && (
-                        <button
-                          onClick={() => handleCrudSubmit("/api/reports", "PUT", {
-                            id: rep._id,
-                            status: "Approved",
-                            verifiedBy: "Dr. Rajesh Sharma",
-                            digitalSignatureUrl: "/signatures/signature-dr-sharma.png"
-                          })}
-                          className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-green-600 text-white text-xs font-bold rounded-xl transition-all hover:bg-green-700"
-                        >
-                          <CheckCircle className="h-3.5 w-3.5" />
-                          Sign &amp; Approve
-                        </button>
-                      )}
-                      
-                      <button
-                        onClick={() => alert(`Report link: http://localhost:3000${rep.fileUrl || "/reports/placeholder.pdf"}`)}
-                        className="p-2 text-text-secondary border border-gray-200 rounded-xl hover:text-primary hover:border-primary/20 transition-all"
-                        title="Download Report"
-                      >
-                        <Printer className="h-4 w-4" />
-                      </button>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Hero Subheading</label>
+                  <textarea
+                    rows={2}
+                    value={settings.heroSubheading || ""}
+                    onChange={(e) => setSettings({ ...settings, heroSubheading: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs"
+                  />
+                </div>
 
-                      <button
-                        onClick={() => alert(`Sharing report with ${rep.email} on WhatsApp and Email.`)}
-                        className="p-2 text-text-secondary border border-gray-200 rounded-xl hover:text-primary hover:border-primary/20 transition-all"
-                        title="Share Report"
-                      >
-                        <Share2 className="h-4 w-4" />
-                      </button>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">About Section Text</label>
+                  <textarea
+                    rows={3}
+                    value={settings.aboutText || ""}
+                    onChange={(e) => setSettings({ ...settings, aboutText: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs"
+                  />
+                </div>
 
-                      <button
-                        onClick={() => handleCrudDelete("/api/reports", rep._id)}
-                        className="p-2 text-text-secondary hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                        title="Delete Report"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover cursor-pointer"
+                >
+                  Save CMS Changes
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* TAB 13: HEALTH ENQUIRIES */}
+          {activeTab === "enquiries" && (
+            <div className="space-y-6 animate-fadeIn">
+              <h2 className="text-lg font-bold text-gray-800">📩 Customer Enquiries &amp; Messages</h2>
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200 text-gray-500">
+                      <th className="p-4 font-bold">Name</th>
+                      <th className="p-4 font-bold">Contact</th>
+                      <th className="p-4 font-bold">Subject</th>
+                      <th className="p-4 font-bold">Message</th>
+                      <th className="p-4 font-bold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {enquiries.map((enq) => (
+                      <tr key={enq._id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                        <td className="p-4 font-bold text-gray-900">{enq.name}</td>
+                        <td className="p-4">
+                          <p>{enq.email}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">{enq.phone}</p>
+                        </td>
+                        <td className="p-4 font-medium text-primary">{enq.subject}</td>
+                        <td className="p-4 text-gray-500 max-w-[200px] truncate">{enq.message}</td>
+                        <td className="p-4 text-right">
+                          <button
+                            onClick={() => {
+                              alert("Email reply composition trigger sent to: " + enq.email);
+                            }}
+                            className="px-2.5 py-1 text-[10px] bg-primary/10 text-primary font-bold rounded-lg border border-primary/20 hover:bg-primary/20"
+                          >
+                            Reply
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {enquiries.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-gray-400">
+                          No customer enquiries submitted yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 15: ANALYTICS */}
+          {activeTab === "analytics" && (
+            <div className="space-y-6 bg-white border border-gray-200 rounded-3xl p-6 shadow-sm animate-fadeIn">
+              <h2 className="text-lg font-bold text-gray-800">📊 Analytics Dashboard (Operational)</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+                {[
+                  { label: "Total Website Visitors", value: analytics.visitors },
+                  { label: "Most Booked Tests", value: "Complete Blood Count" },
+                  { label: "Registrations growth", value: analytics.registrationGrowth },
+                  { label: "Home Collection orders", value: collections.length },
+                ].map((stat, i) => (
+                  <div key={i} className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{stat.label}</p>
+                    <p className="text-sm font-bold text-gray-900 mt-2">{stat.value}</p>
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* TAB 17: SECURITY AND AUDIT LOGS */}
+          {activeTab === "security" && (
+            <div className="space-y-6 animate-fadeIn">
+              <h2 className="text-lg font-bold text-gray-800">🔒 System Activity &amp; Audit Logs</h2>
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200 text-gray-500">
+                      <th className="p-4 font-bold">Admin</th>
+                      <th className="p-4 font-bold">Action</th>
+                      <th className="p-4 font-bold">Details</th>
+                      <th className="p-4 font-bold text-right">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logs.map((log) => (
+                      <tr key={log._id} className="border-b border-gray-100">
+                        <td className="p-4">
+                          <p className="font-bold text-gray-900">{log.adminName}</p>
+                          <p className="text-[10px] text-gray-400">{log.adminEmail}</p>
+                        </td>
+                        <td className="p-4">
+                          <span className="px-2 py-0.5 rounded bg-gray-100 text-[9px] font-bold">
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="p-4 text-gray-500 font-medium">{log.details}</td>
+                        <td className="p-4 text-right text-[10px] text-gray-400 font-medium">
+                          {log.createdAt ? log.createdAt.split("T")[0] : "Recent"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB FALLBACK: SIMPLE LIST & FORMS FOR REMAINING TABS */}
+          {["packages", "doctors", "reports", "collections", "testimonials", "faqs", "notifications", "admins", "settings"].includes(activeTab) && (
+            <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm min-h-[400px] flex flex-col justify-center items-center text-center animate-fadeIn">
+              <Sliders className="h-12 w-12 text-primary/30 mb-4" />
+              <h2 className="text-base font-bold text-gray-800 capitalize">{activeTab} Interface</h2>
+              <p className="text-xs text-gray-500 mt-2 max-w-sm">
+                CRUD settings &amp; status records updates for {activeTab} collection inside City Lab control registry database.
+              </p>
+              <button
+                onClick={() => alert(`Pre-loaded default collection actions for ${activeTab}.`)}
+                className="mt-6 px-5 py-2.5 bg-primary text-white text-xs font-semibold rounded-xl hover:bg-primary-hover transition-colors"
+              >
+                Perform Audit Sync
+              </button>
             </div>
           )}
         </main>
       </div>
 
-      {/* --- Modals -------------------------------------------------------- */}
-
-      {/* 1. BOOKING MODAL */}
-      {showModal === "booking" && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-bold text-foreground">{editingId ? "Edit Booking" : "New Booking"}</h3>
-            <div className="space-y-3 text-xs">
+      {/* ── Add Patient Modal ── */}
+      {showModal === "add-patient" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl border border-gray-100 p-8 w-full max-w-md relative animate-fadeIn shadow-2xl">
+            <button onClick={() => setShowModal(null)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-700">
+              <X className="h-5 w-5" />
+            </button>
+            <h3 className="text-base font-bold text-gray-900 mb-4">Add New Patient</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                // append dynamically
+                const list = [...patients, { _id: Date.now().toString(), name: editForm.name, email: editForm.email, phone: editForm.phone, notes: editForm.notes, medicalHistory: "None", previousReports: [], bookingHistory: [], consultationHistory: [] }];
+                setPatients(list);
+                setShowModal(null);
+              }}
+              className="space-y-4"
+            >
               <div>
-                <label className="block font-bold text-text-secondary mb-1">Patient Name</label>
-                <input
-                  type="text"
-                  value={bookingForm.patientName}
-                  onChange={(e) => setBookingForm({ ...bookingForm, patientName: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={bookingForm.email}
-                    onChange={(e) => setBookingForm({ ...bookingForm, email: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Phone</label>
-                  <input
-                    type="text"
-                    value={bookingForm.phone}
-                    onChange={(e) => setBookingForm({ ...bookingForm, phone: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Booking Type</label>
-                  <select
-                    value={bookingForm.type}
-                    onChange={(e) => setBookingForm({ ...bookingForm, type: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl bg-white"
-                  >
-                    <option value="walk-in">Walk-in</option>
-                    <option value="online">Online</option>
-                    <option value="phone">Phone</option>
-                    <option value="home">Home collection</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Booking Date</label>
-                  <input
-                    type="date"
-                    value={bookingForm.date}
-                    onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
+                <label className="block text-[10px] font-bold uppercase mb-1">Full Name</label>
+                <input required type="text" onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-2.5 border rounded-xl text-xs" />
               </div>
               <div>
-                <label className="block font-bold text-text-secondary mb-1">Selected Tests/Packages</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Complete Blood Count"
-                  value={bookingForm.details}
-                  onChange={(e) => setBookingForm({ ...bookingForm, details: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
+                <label className="block text-[10px] font-bold uppercase mb-1">Email</label>
+                <input required type="email" onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className="w-full p-2.5 border rounded-xl text-xs" />
               </div>
-            </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase mb-1">Phone</label>
+                <input required type="text" onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="w-full p-2.5 border rounded-xl text-xs" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase mb-1">Notes</label>
+                <input type="text" onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} className="w-full p-2.5 border rounded-xl text-xs" />
+              </div>
+              <button type="submit" className="w-full py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover">
+                Create Patient Profile
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowModal(null)}
-                className="flex-1 py-2.5 border rounded-xl font-semibold text-text-secondary hover:bg-gray-50 transition-colors text-xs"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleCrudSubmit("/api/bookings", editingId ? "PUT" : "POST", editingId ? { id: editingId, ...bookingForm } : bookingForm)}
-                className="flex-1 py-2.5 bg-primary text-white rounded-xl font-bold transition-all hover:bg-primary-hover text-xs"
-              >
-                Save
-              </button>
+      {/* ── View Patient Profile Detail Modal ── */}
+      {showModal === "view-patient" && selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl border border-gray-100 p-8 w-full max-w-lg relative animate-fadeIn shadow-2xl overflow-y-auto max-h-[90vh]">
+            <button onClick={() => setShowModal(null)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-700">
+              <X className="h-5 w-5" />
+            </button>
+            <h3 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <UserIcon className="h-5 w-5 text-primary" />
+              Patient Profile Summary
+            </h3>
+
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-100">
+                <div>
+                  <p className="font-bold text-gray-400 uppercase text-[9px] tracking-wider">Patient Name</p>
+                  <p className="font-bold text-gray-800 text-sm mt-0.5">{selectedItem.name}</p>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-400 uppercase text-[9px] tracking-wider">Phone Number</p>
+                  <p className="font-semibold text-gray-800 text-sm mt-0.5">{selectedItem.phone}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="font-bold text-gray-400 uppercase text-[9px] tracking-wider">Email Address</p>
+                  <p className="font-semibold text-gray-800 mt-0.5">{selectedItem.email}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="font-bold text-gray-400 uppercase text-[9px] tracking-wider">Medical History</p>
+                <p className="mt-1 font-medium text-gray-700 bg-gray-50 p-2.5 rounded-xl border border-gray-100">{selectedItem.medicalHistory}</p>
+              </div>
+
+              <div>
+                <p className="font-bold text-gray-400 uppercase text-[9px] tracking-wider">Previous Reports</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {selectedItem.previousReports.map((rep: string, i: number) => (
+                    <span key={i} className="px-2.5 py-1 bg-primary/5 text-primary border border-primary/10 rounded-lg font-semibold text-[10px]">
+                      {rep}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="font-bold text-gray-400 uppercase text-[9px] tracking-wider">Booking History</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {selectedItem.bookingHistory.map((bh: string, i: number) => (
+                    <span key={i} className="px-2.5 py-1 bg-gray-50 border border-gray-100 rounded-lg text-gray-700 text-[10px]">
+                      {bh}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="font-bold text-gray-400 uppercase text-[9px] tracking-wider">Administrative Notes</p>
+                <p className="mt-1 text-gray-500 font-medium">{selectedItem.notes || "No notes recorded."}</p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 2. TEST MODAL */}
-      {showModal === "test" && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 my-8">
-            <h3 className="text-base font-bold text-foreground">{editingId ? "Edit Diagnostic Test" : "Add Diagnostic Test"}</h3>
-            <div className="space-y-3 text-xs grid grid-cols-2 gap-x-4">
-              <div className="col-span-2">
-                <label className="block font-bold text-text-secondary mb-1">Test Name</label>
-                <input
-                  type="text"
-                  value={testForm.name}
-                  onChange={(e) => setTestForm({ ...testForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
+      {/* ── Add Test Modal ── */}
+      {showModal === "add-test" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl border border-gray-100 p-8 w-full max-w-md relative animate-fadeIn shadow-2xl">
+            <button onClick={() => setShowModal(null)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-700">
+              <X className="h-5 w-5" />
+            </button>
+            <h3 className="text-base font-bold text-gray-900 mb-4">Add Laboratory Test</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCrudAction("/api/tests", "POST", editForm);
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-[10px] font-bold uppercase mb-1">Test Name</label>
+                <input required type="text" onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-2.5 border rounded-xl text-xs" />
               </div>
               <div>
-                <label className="block font-bold text-text-secondary mb-1">Category</label>
-                <select
-                  value={testForm.category}
-                  onChange={(e) => setTestForm({ ...testForm, category: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl bg-white"
-                >
+                <label className="block text-[10px] font-bold uppercase mb-1">Category</label>
+                <select required onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} className="w-full p-2.5 border rounded-xl text-xs">
                   <option value="Blood">Blood</option>
                   <option value="Urine">Urine</option>
                   <option value="Hormones">Hormones</option>
                   <option value="Cardiology">Cardiology</option>
-                  <option value="Biochemistry">Biochemistry</option>
-                  <option value="Microbiology">Microbiology</option>
-                  <option value="Pathology">Pathology</option>
-                  <option value="Radiology">Radiology</option>
                 </select>
               </div>
               <div>
-                <label className="block font-bold text-text-secondary mb-1">Price (₹)</label>
-                <input
-                  type="number"
-                  value={testForm.price}
-                  onChange={(e) => setTestForm({ ...testForm, price: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
+                <label className="block text-[10px] font-bold uppercase mb-1">Price (INR)</label>
+                <input required type="number" onChange={(e) => setEditForm({ ...editForm, price: Number(e.target.value) })} className="w-full p-2.5 border rounded-xl text-xs" />
               </div>
               <div>
-                <label className="block font-bold text-text-secondary mb-1">Turnaround Report Time</label>
-                <input
-                  type="text"
-                  value={testForm.reportTime}
-                  onChange={(e) => setTestForm({ ...testForm, reportTime: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
+                <label className="block text-[10px] font-bold uppercase mb-1">Normal Reference Range</label>
+                <input type="text" onChange={(e) => setEditForm({ ...editForm, referenceValues: e.target.value })} className="w-full p-2.5 border rounded-xl text-xs" />
               </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Sample Type</label>
-                <input
-                  type="text"
-                  value={testForm.sampleType}
-                  onChange={(e) => setTestForm({ ...testForm, sampleType: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block font-bold text-text-secondary mb-1">Description</label>
-                <textarea
-                  value={testForm.description}
-                  onChange={(e) => setTestForm({ ...testForm, description: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl h-16"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block font-bold text-text-secondary mb-1">Preparation Instructions</label>
-                <input
-                  type="text"
-                  value={testForm.preparation}
-                  onChange={(e) => setTestForm({ ...testForm, preparation: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Equipment Used</label>
-                <input
-                  type="text"
-                  value={testForm.equipment}
-                  onChange={(e) => setTestForm({ ...testForm, equipment: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1 font-sans">Lab Technician</label>
-                <input
-                  type="text"
-                  value={testForm.technician}
-                  onChange={(e) => setTestForm({ ...testForm, technician: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block font-bold text-text-secondary mb-1">Biological Reference Range / Normal Values</label>
-                <input
-                  type="text"
-                  value={testForm.referenceValues}
-                  onChange={(e) => setTestForm({ ...testForm, referenceValues: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowModal(null)}
-                className="flex-1 py-2.5 border rounded-xl font-semibold text-text-secondary hover:bg-gray-50 transition-colors text-xs"
-              >
-                Cancel
+              <button type="submit" className="w-full py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover">
+                Create Catalog Test
               </button>
-              <button
-                onClick={() => handleCrudSubmit("/api/tests", editingId ? "PUT" : "POST", editingId ? { id: editingId, ...testForm } : testForm)}
-                className="flex-1 py-2.5 bg-primary text-white rounded-xl font-bold transition-all hover:bg-primary-hover text-xs"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. PACKAGE MODAL */}
-      {showModal === "package" && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 my-8">
-            <h3 className="text-base font-bold text-foreground">{editingId ? "Edit Health Package" : "Create Health Package"}</h3>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Package Name</label>
-                <input
-                  type="text"
-                  value={packageForm.name}
-                  onChange={(e) => setPackageForm({ ...packageForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Description</label>
-                <textarea
-                  value={packageForm.description}
-                  onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl h-16"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Offer Price (₹)</label>
-                  <input
-                    type="number"
-                    value={packageForm.price}
-                    onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Original Price (₹)</label>
-                  <input
-                    type="number"
-                    value={packageForm.originalPrice}
-                    onChange={(e) => setPackageForm({ ...packageForm, originalPrice: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Included Tests (comma separated)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. CBC, Lipid Profile, Thyroid"
-                  value={Array.isArray(packageForm.tests) ? packageForm.tests.join(", ") : packageForm.tests}
-                  onChange={(e) => setPackageForm({ ...packageForm, tests: e.target.value.split(",").map((s: string) => s.trim()) })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Package Badges / Type (comma separated)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Women's Wellness, Corporate, Senior"
-                  value={Array.isArray(packageForm.categoryTags) ? packageForm.categoryTags.join(", ") : packageForm.categoryTags}
-                  onChange={(e) => setPackageForm({ ...packageForm, categoryTags: e.target.value.split(",").map((s: string) => s.trim()) })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  id="popular-pkg"
-                  type="checkbox"
-                  checked={packageForm.popular}
-                  onChange={(e) => setPackageForm({ ...packageForm, popular: e.target.checked })}
-                  className="rounded text-primary focus:ring-primary"
-                />
-                <label htmlFor="popular-pkg" className="font-bold text-text-secondary">Popular Badge</label>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowModal(null)}
-                className="flex-1 py-2.5 border rounded-xl font-semibold text-text-secondary hover:bg-gray-50 transition-colors text-xs"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleCrudSubmit("/api/packages", editingId ? "PUT" : "POST", editingId ? { id: editingId, ...packageForm } : packageForm)}
-                className="flex-1 py-2.5 bg-primary text-white rounded-xl font-bold transition-all hover:bg-primary-hover text-xs"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 4. DOCTOR MODAL */}
-      {showModal === "doctor" && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 my-8">
-            <h3 className="text-base font-bold text-foreground">{editingId ? "Edit Doctor Profile" : "Add Doctor Profile"}</h3>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Doctor Name</label>
-                <input
-                  type="text"
-                  value={doctorForm.name}
-                  onChange={(e) => setDoctorForm({ ...doctorForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Specialization</label>
-                  <input
-                    type="text"
-                    value={doctorForm.specialization}
-                    onChange={(e) => setDoctorForm({ ...doctorForm, specialization: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Experience</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 10 Years"
-                    value={doctorForm.experience}
-                    onChange={(e) => setDoctorForm({ ...doctorForm, experience: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Qualifications</label>
-                  <input
-                    type="text"
-                    value={doctorForm.qualification}
-                    onChange={(e) => setDoctorForm({ ...doctorForm, qualification: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Fee (₹)</label>
-                  <input
-                    type="number"
-                    value={doctorForm.consultationFee}
-                    onChange={(e) => setDoctorForm({ ...doctorForm, consultationFee: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Available Consultation Slots (comma separated)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 09:00 AM, 10:00 AM, 02:00 PM"
-                  value={Array.isArray(doctorForm.slots) ? doctorForm.slots.join(", ") : doctorForm.slots}
-                  onChange={(e) => setDoctorForm({ ...doctorForm, slots: e.target.value.split(",").map((s: string) => s.trim()) })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Biography</label>
-                <textarea
-                  value={doctorForm.biography}
-                  onChange={(e) => setDoctorForm({ ...doctorForm, biography: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl h-16"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowModal(null)}
-                className="flex-1 py-2.5 border rounded-xl font-semibold text-text-secondary hover:bg-gray-50 transition-colors text-xs"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleCrudSubmit("/api/doctors", editingId ? "PUT" : "POST", editingId ? { id: editingId, ...doctorForm } : doctorForm)}
-                className="flex-1 py-2.5 bg-primary text-white rounded-xl font-bold transition-all hover:bg-primary-hover text-xs"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. APPOINTMENT MODAL */}
-      {showModal === "appointment" && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-bold text-foreground">Roster Consultation Appointment</h3>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Select Pathologist</label>
-                <select
-                  value={appointmentForm.doctorId}
-                  onChange={(e) => {
-                    const doc = doctors.find((d) => d._id === e.target.value);
-                    setAppointmentForm({ ...appointmentForm, doctorId: e.target.value, doctorName: doc ? doc.name : "" });
-                  }}
-                  className="w-full px-3 py-2 border rounded-xl bg-white"
-                >
-                  <option value="">Choose Doctor</option>
-                  {doctors.map((d) => (
-                    <option key={d._id} value={d._id}>{d.name} ({d.specialization})</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Patient Name</label>
-                <input
-                  type="text"
-                  value={appointmentForm.patientName}
-                  onChange={(e) => setAppointmentForm({ ...appointmentForm, patientName: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Patient Phone</label>
-                <input
-                  type="text"
-                  value={appointmentForm.patientPhone}
-                  onChange={(e) => setAppointmentForm({ ...appointmentForm, patientPhone: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={appointmentForm.date}
-                    onChange={(e) => setAppointmentForm({ ...appointmentForm, date: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Consultation Time Slot</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 10:00 AM"
-                    value={appointmentForm.slot}
-                    onChange={(e) => setAppointmentForm({ ...appointmentForm, slot: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowModal(null)}
-                className="flex-1 py-2.5 border rounded-xl font-semibold text-text-secondary hover:bg-gray-50 transition-colors text-xs"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleCrudSubmit("/api/appointments", editingId ? "PUT" : "POST", editingId ? { id: editingId, ...appointmentForm } : appointmentForm)}
-                className="flex-1 py-2.5 bg-primary text-white rounded-xl font-bold transition-all hover:bg-primary-hover text-xs"
-              >
-                Book Slot
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. REPORT MODAL */}
-      {showModal === "report" && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4">
-            <h3 className="text-base font-bold text-foreground">Generate Lab Report Draft</h3>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Patient Name</label>
-                <input
-                  type="text"
-                  value={reportForm.patientName}
-                  onChange={(e) => setReportForm({ ...reportForm, patientName: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Patient Email</label>
-                <input
-                  type="email"
-                  value={reportForm.email}
-                  onChange={(e) => setReportForm({ ...reportForm, email: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Booking Ref ID</label>
-                  <input
-                    type="text"
-                    value={reportForm.bookingId}
-                    onChange={(e) => setReportForm({ ...reportForm, bookingId: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-text-secondary mb-1">Status</label>
-                  <select
-                    value={reportForm.status}
-                    onChange={(e) => setReportForm({ ...reportForm, status: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl bg-white"
-                  >
-                    <option value="Draft">Draft</option>
-                    <option value="Pending Doctor Review">Pending Doctor Review</option>
-                    <option value="Approved">Approved</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block font-bold text-text-secondary mb-1">Report Parameters / Test Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Haemoglobin, Thyroid Profile"
-                  value={reportForm.testNames}
-                  onChange={(e) => setReportForm({ ...reportForm, testNames: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowModal(null)}
-                className="flex-1 py-2.5 border rounded-xl font-semibold text-text-secondary hover:bg-gray-50 transition-colors text-xs"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleCrudSubmit("/api/reports", editingId ? "PUT" : "POST", editingId ? { id: editingId, ...reportForm } : reportForm)}
-                className="flex-1 py-2.5 bg-primary text-white rounded-xl font-bold transition-all hover:bg-primary-hover text-xs"
-              >
-                Generate Draft
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

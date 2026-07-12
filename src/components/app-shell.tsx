@@ -20,7 +20,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { openLoginModal } = useModal();
   const isLoginPage = pathname === "/login";
   const isAdminPage = pathname.startsWith("/admin");
-  const isExcludedPage = isLoginPage || isAdminPage;
+  const isPatientDashboard = user !== null && pathname === "/";
+  const isExcludedPage = isLoginPage || isAdminPage || isPatientDashboard;
 
   // Auto-launch Login Modal on website startup if unauthenticated and not skipped
   useEffect(() => {

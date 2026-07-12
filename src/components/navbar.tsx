@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Menu, X, Phone, LogOut, LogIn, Compass, Sun, Moon } from "lucide-react";
+import { Menu, X, Phone, LogOut, LogIn, Compass } from "lucide-react";
 import { navLinks } from "@/lib/data";
 import { useAuth } from "@/lib/auth-context";
 import { useModal } from "@/lib/modal-context";
@@ -16,24 +16,7 @@ export function Navbar() {
   const { user, isAdmin, loading, signOut } = useAuth();
   const { openLoginModal } = useModal();
 
-  const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark");
-    setTheme(isDark ? "dark" : "light");
-  }, []);
-
-  const toggleTheme = () => {
-    if (theme === "light") {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setTheme("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setTheme("light");
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -132,19 +115,7 @@ export function Navbar() {
               Book a Test
             </Link>
 
-            {/* Dark Mode Toggle (Desktop) */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="p-2 rounded-full border border-border text-text-secondary hover:text-primary hover:border-primary/30 transition-all duration-200 cursor-pointer"
-              aria-label="Toggle dark mode"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4.5 w-4.5 text-amber-500 animate-pulse" />
-              ) : (
-                <Moon className="h-4.5 w-4.5" />
-              )}
-            </button>
+
 
             {/* Auth Button / User Menu (Desktop) */}
             {!loading && (
@@ -225,20 +196,8 @@ export function Navbar() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex items-center gap-1.5 lg:hidden">
-            {/* Dark Mode Toggle (Mobile) */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="p-2 rounded-xl text-text-secondary hover:bg-primary/5 transition-colors cursor-pointer"
-              aria-label="Toggle dark mode"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-5 w-5 text-amber-500" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </button>
+          <div className="flex items-center gap-2 lg:hidden">
+
             {/* Mobile auth indicator (Top Right corner) */}
             {!loading && (
               <>
