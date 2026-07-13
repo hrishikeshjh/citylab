@@ -61,7 +61,7 @@ export function TestsDirectory() {
               placeholder="Search for a test (e.g., Thyroid, Vitamin D, CBC)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 text-sm bg-white border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              className="w-full pl-12 pr-4 py-3.5 text-sm bg-white dark:bg-gray-800 border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-foreground placeholder:text-text-secondary"
               aria-label="Search tests"
               id="test-search"
             />
@@ -78,7 +78,7 @@ export function TestsDirectory() {
               className={`px-4 py-2 text-sm font-medium rounded-full border transition-all duration-200 ${
                 activeCategory === category
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-text-secondary border-border hover:border-primary/30 hover:text-primary"
+                  : "bg-white dark:bg-gray-800 text-text-secondary border-border hover:border-primary/30 hover:text-primary"
               }`}
               aria-pressed={activeCategory === category}
             >
@@ -92,7 +92,7 @@ export function TestsDirectory() {
           {filteredTests.slice(0, 12).map((test, index) => (
             <motion.div
               key={test.name}
-              className="group flex flex-col p-5 bg-white rounded-2xl border border-border transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 hover:border-primary/20"
+              className="group flex flex-col p-5 bg-white dark:bg-gray-800 rounded-2xl border border-border transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] hover:-translate-y-0.5 hover:border-primary/20"
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-30px" }}

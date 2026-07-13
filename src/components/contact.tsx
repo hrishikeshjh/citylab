@@ -28,7 +28,7 @@ export function Contact() {
   return (
     <section
       id="contact"
-      className="section-padding bg-white"
+      className="section-padding bg-white dark:bg-gray-900"
       aria-labelledby="contact-heading"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -82,7 +82,7 @@ export function Contact() {
                   id="contact-name"
                   placeholder="Enter your name"
                   {...register("name", { required: "Please enter your name" })}
-                  className="w-full px-4 py-3 text-sm bg-white border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  className="w-full px-4 py-3 text-sm bg-white dark:bg-gray-800 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-foreground placeholder:text-text-secondary"
                 />
                 {errors.name && (
                   <p className="mt-1 text-xs text-red-500">
@@ -110,7 +110,7 @@ export function Contact() {
                       message: "Please enter a valid phone number",
                     },
                   })}
-                  className="w-full px-4 py-3 text-sm bg-white border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  className="w-full px-4 py-3 text-sm bg-white dark:bg-gray-800 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-foreground placeholder:text-text-secondary"
                 />
                 {errors.phone && (
                   <p className="mt-1 text-xs text-red-500">
@@ -138,7 +138,7 @@ export function Contact() {
                       message: "Please enter a valid email address",
                     },
                   })}
-                  className="w-full px-4 py-3 text-sm bg-white border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  className="w-full px-4 py-3 text-sm bg-white dark:bg-gray-800 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-foreground placeholder:text-text-secondary"
                 />
                 {errors.email && (
                   <p className="mt-1 text-xs text-red-500">
@@ -162,7 +162,7 @@ export function Contact() {
                   {...register("message", {
                     required: "Please enter a message",
                   })}
-                  className="w-full px-4 py-3 text-sm bg-white border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
+                  className="w-full px-4 py-3 text-sm bg-white dark:bg-gray-800 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none text-foreground placeholder:text-text-secondary"
                 />
                 {errors.message && (
                   <p className="mt-1 text-xs text-red-500">
@@ -247,7 +247,7 @@ export function Contact() {
             ))}
 
             {/* Map Placeholder */}
-            <div className="aspect-[4/3] rounded-2xl bg-gray-100 border border-border flex items-center justify-center">
+            <div className="aspect-[4/3] rounded-2xl bg-gray-100 dark:bg-gray-800 border border-border flex items-center justify-center">
               <div className="text-center">
                 <MapPin className="h-8 w-8 text-text-secondary mx-auto" />
                 <p className="mt-2 text-sm text-text-secondary">

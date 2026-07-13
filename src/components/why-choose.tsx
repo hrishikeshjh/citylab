@@ -62,7 +62,7 @@ export function WhyChoose() {
             return (
               <motion.div
                 key={item.title}
-                className="group p-6 bg-white rounded-2xl border border-border transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 hover:border-primary/20"
+                className="group p-6 bg-white dark:bg-gray-800 rounded-2xl border border-border transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] hover:-translate-y-0.5 hover:border-primary/20"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}

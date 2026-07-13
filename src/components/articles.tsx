@@ -41,7 +41,7 @@ export function Articles() {
           {articles.map((article, index) => (
             <motion.article
               key={article.title}
-              className="group flex flex-col bg-white rounded-2xl border border-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 hover:border-primary/20"
+              className="group flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] hover:-translate-y-0.5 hover:border-primary/20"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
@@ -57,7 +57,7 @@ export function Articles() {
                   loading="lazy"
                 />
                 <div className="absolute top-3 left-3">
-                  <span className="px-2.5 py-1 text-xs font-medium text-primary bg-white/90 backdrop-blur-sm rounded-full">
+                  <span className="px-2.5 py-1 text-xs font-medium text-primary bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full">
                     {article.category}
                   </span>
                 </div>

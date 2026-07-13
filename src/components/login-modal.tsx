@@ -136,7 +136,7 @@ export function LoginModal() {
 
         {/* Modal Dialog Card */}
         <motion.div
-          className="w-full max-w-md bg-white rounded-3xl shadow-2xl shadow-black/15 border border-gray-100 p-8 relative z-10 font-sans"
+          className="w-full max-w-md bg-white dark:bg-gray-800 rounded-3xl shadow-2xl shadow-black/15 dark:shadow-black/40 border border-gray-100 dark:border-gray-700 p-8 relative z-10 font-sans"
           initial={{ opacity: 0, scale: 0.9, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 15 }}
@@ -146,7 +146,7 @@ export function LoginModal() {
           <button
             type="button"
             onClick={handleSkip}
-            className="absolute top-5 right-5 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+            className="absolute top-5 right-5 p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
             aria-label="Skip login"
           >
             <X className="h-5 w-5" />
@@ -171,7 +171,7 @@ export function LoginModal() {
           <AnimatePresence>
             {error && (
               <motion.div
-                className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 text-xs text-red-600"
+                className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-xs text-red-600 dark:text-red-400"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
@@ -186,7 +186,7 @@ export function LoginModal() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-foreground transition-all hover:bg-gray-50 disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-bold text-foreground transition-all hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-60"
           >
             {googleLoading ? (
               <div className="h-4 w-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
@@ -198,11 +198,11 @@ export function LoginModal() {
 
           {/* Divider */}
           <div className="flex items-center gap-4 my-5">
-            <div className="flex-1 h-px bg-gray-100" />
+            <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
             <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
               or
             </span>
-            <div className="flex-1 h-px bg-gray-100" />
+            <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
           </div>
 
           {/* Email/Password Form */}
@@ -218,7 +218,7 @@ export function LoginModal() {
                     type="text"
                     placeholder="John Doe"
                     {...register("name", { required: "Name is required" })}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 text-xs text-foreground placeholder:text-gray-400 focus:outline-none focus:border-primary focus:bg-white"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 text-xs text-foreground placeholder:text-gray-400 focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-gray-700"
                   />
                 </div>
                 {errors.name && (
@@ -240,7 +240,7 @@ export function LoginModal() {
                     required: "Email is required",
                     pattern: { value: /^\S+@\S+$/i, message: "Invalid email" },
                   })}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 text-xs text-foreground placeholder:text-gray-400 focus:outline-none focus:border-primary focus:bg-white"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 text-xs text-foreground placeholder:text-gray-400 focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-gray-700"
                 />
               </div>
               {errors.email && (
@@ -261,12 +261,12 @@ export function LoginModal() {
                     required: "Password is required",
                     minLength: { value: 6, message: "Min 6 characters" },
                   })}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 text-xs text-foreground placeholder:text-gray-400 focus:outline-none focus:border-primary focus:bg-white"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 text-xs text-foreground placeholder:text-gray-400 focus:outline-none focus:border-primary focus:bg-white dark:focus:bg-gray-700"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </button>
@@ -305,7 +305,7 @@ export function LoginModal() {
           </p>
 
           {/* Guest skip link */}
-          <div className="mt-5 pt-4 border-t border-gray-50 text-center">
+          <div className="mt-5 pt-4 border-t border-gray-50 dark:border-gray-700 text-center">
             <button
               type="button"
               onClick={handleSkip}

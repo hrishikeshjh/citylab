@@ -29,7 +29,7 @@ export function FloatingButtons() {
       </a>
       <a
         href="tel:+919876543210"
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-white shadow-lg shadow-foreground/25 transition-all duration-200 hover:scale-110 hover:shadow-xl hover:shadow-foreground/30"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-900 dark:bg-gray-700 text-white shadow-lg shadow-gray-900/25 dark:shadow-black/30 transition-all duration-200 hover:scale-110 hover:shadow-xl hover:shadow-gray-900/30"
         aria-label="Call City Lab"
         title="Call Now"
       >

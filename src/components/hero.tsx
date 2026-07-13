@@ -78,11 +78,10 @@ export function Hero() {
             key={index}
             type="button"
             onClick={() => setCurrentSlide(index)}
-            className={`h-2 rounded-full transition-all duration-500 ${
-              index === currentSlide
-                ? "w-8 bg-primary"
-                : "w-2 bg-white/50 hover:bg-white/75"
-            }`}
+            className={`h-2 rounded-full transition-all duration-500 ${index === currentSlide
+              ? "w-8 bg-primary"
+              : "w-2 bg-white/50 hover:bg-white/75"
+              }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
@@ -97,7 +96,7 @@ export function Hero() {
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-bold text-white leading-[1.1] tracking-tight">
-            Accurate Diagnostics &
+            S & J Diagnostic Centre
             <br />
             <span className="text-primary">Trusted Care in Howrah.</span>
           </h1>

@@ -69,7 +69,7 @@ export function HomeCollection() {
                 )}
 
                 <div className="flex flex-col items-center">
-                  <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-sm border border-border">
+                  <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-white dark:bg-gray-800 shadow-sm border border-border">
                     <Icon className="h-8 w-8 text-primary" />
                     <span className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white text-xs font-bold">
                       {step.step}

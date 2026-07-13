@@ -23,7 +23,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 export function QuickServices() {
   return (
-    <section className="section-padding bg-white" aria-label="Quick services">
+    <section className="section-padding bg-white dark:bg-gray-900" aria-label="Quick services">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {quickServices.map((service, index) => {
@@ -38,7 +38,7 @@ export function QuickServices() {
               >
                 <Link
                   href={service.href}
-                  className="group flex items-start gap-4 p-5 rounded-2xl border border-border bg-white transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 hover:border-primary/20"
+                  className="group flex items-start gap-4 p-5 rounded-2xl border border-border bg-white dark:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] hover:-translate-y-0.5 hover:border-primary/20"
                 >
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary transition-colors duration-200 group-hover:bg-primary group-hover:text-white">
                     <Icon className="h-6 w-6" />

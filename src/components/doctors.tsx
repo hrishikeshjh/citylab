@@ -10,7 +10,7 @@ export function Doctors() {
   return (
     <section
       id="doctors"
-      className="section-padding bg-white"
+      className="section-padding bg-white dark:bg-gray-900"
       aria-labelledby="doctors-heading"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -43,7 +43,7 @@ export function Doctors() {
           {doctors.map((doctor, index) => (
             <motion.div
               key={doctor.name}
-              className="group flex flex-col items-center text-center p-6 bg-white rounded-2xl border border-border transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 hover:border-primary/20"
+              className="group flex flex-col items-center text-center p-6 bg-white dark:bg-gray-800 rounded-2xl border border-border transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] hover:-translate-y-0.5 hover:border-primary/20"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}

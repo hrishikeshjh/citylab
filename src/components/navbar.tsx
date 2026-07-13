@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Menu, X, Phone, LogOut, LogIn, Compass } from "lucide-react";
+import { Menu, X, Phone, LogOut, LogIn, Compass, Moon, Sun, Monitor } from "lucide-react";
 import { navLinks } from "@/lib/data";
 import { useAuth } from "@/lib/auth-context";
 import { useModal } from "@/lib/modal-context";
+import { useTheme } from "@/lib/theme-context";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,8 +16,7 @@ export function Navbar() {
 
   const { user, isAdmin, loading, signOut } = useAuth();
   const { openLoginModal } = useModal();
-
-
+  const { theme, resolvedTheme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,7 +44,18 @@ export function Navbar() {
     setIsOpen(false);
   };
 
-  /* --- User initials helper ------------------------------------------ */
+  /* --- Theme icon helper ------------------------------------------------- */
+  const ThemeIcon =
+    theme === "system" ? Monitor : resolvedTheme === "dark" ? Moon : Sun;
+
+  const themeLabel =
+    theme === "system"
+      ? "System theme"
+      : resolvedTheme === "dark"
+        ? "Dark mode"
+        : "Light mode";
+
+  /* --- User initials helper ---------------------------------------------- */
   const getUserInitials = () => {
     if (user?.displayName) {
       return user.displayName
@@ -60,11 +71,10 @@ export function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-white/80 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
-          : "bg-white/60 backdrop-blur-md"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+        ? "bg-white dark:bg-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
+        : "bg-white dark:bg-gray-900"
+        }`}
       role="banner"
     >
       <nav
@@ -75,7 +85,7 @@ export function Navbar() {
           {/* Logo */}
           <Link
             href="#home"
-            className="flex items-center gap-2 group"
+            className="flex items-center gap-2 group shrink-0"
             aria-label="City Lab — Home"
           >
             <img
@@ -91,7 +101,7 @@ export function Navbar() {
               <Link
                 key={link.label}
                 href={link.href}
-                className="px-3 py-2 text-[14px] font-medium text-text-secondary rounded-lg transition-colors duration-200 hover:text-foreground hover:bg-gray-50"
+                className="px-3 py-2 text-[14px] font-medium text-text-secondary rounded-lg transition-colors duration-200 hover:text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 {link.label}
               </Link>
@@ -100,6 +110,17 @@ export function Navbar() {
 
           {/* Desktop CTAs */}
           <div className="hidden lg:flex lg:items-center lg:gap-3">
+            {/* Theme toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-xl text-text-secondary hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label={themeLabel}
+              title={themeLabel}
+            >
+              <ThemeIcon className="h-5 w-5" />
+            </button>
+
             <a
               href="tel:+919876543210"
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-text-secondary rounded-full border border-border transition-all duration-200 hover:border-primary hover:text-primary"
@@ -114,8 +135,6 @@ export function Navbar() {
             >
               Book a Test
             </Link>
-
-
 
             {/* Auth Button / User Menu (Desktop) */}
             {!loading && (
@@ -147,8 +166,8 @@ export function Navbar() {
                     </button>
 
                     {userMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl shadow-black/[0.08] border border-gray-100 py-2 z-50 font-sans">
-                        <div className="px-4 py-2 border-b border-gray-100">
+                      <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-black/[0.08] dark:shadow-black/[0.3] border border-gray-100 dark:border-gray-700 py-2 z-50 font-sans">
+                        <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
                           <p className="text-sm font-semibold text-foreground truncate">
                             {user.displayName || "User"}
                           </p>
@@ -160,7 +179,7 @@ export function Navbar() {
                           <Link
                             href="/admin"
                             onClick={() => setUserMenuOpen(false)}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-primary-light transition-colors font-semibold border-b border-gray-50"
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-primary-light transition-colors font-semibold border-b border-gray-50 dark:border-gray-700"
                           >
                             <Compass className="h-4 w-4" />
                             Admin Dashboard
@@ -172,7 +191,7 @@ export function Navbar() {
                             await signOut();
                             setUserMenuOpen(false);
                           }}
-                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
                           <LogOut className="h-4 w-4" />
                           Sign Out
@@ -197,6 +216,16 @@ export function Navbar() {
 
           {/* Mobile menu button */}
           <div className="flex items-center gap-2 lg:hidden">
+            {/* Theme toggle (mobile) */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-xl text-text-secondary hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label={themeLabel}
+              title={themeLabel}
+            >
+              <ThemeIcon className="h-5 w-5" />
+            </button>
 
             {/* Mobile auth indicator (Top Right corner) */}
             {!loading && (
@@ -237,7 +266,7 @@ export function Navbar() {
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-xl text-text-secondary hover:text-foreground hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center justify-center p-2 rounded-xl text-text-secondary hover:text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               aria-expanded={isOpen}
               aria-controls="mobile-menu"
               aria-label={isOpen ? "Close menu" : "Open menu"}
@@ -259,7 +288,7 @@ export function Navbar() {
                   key={link.label}
                   href={link.href}
                   onClick={handleLinkClick}
-                  className="px-3 py-2.5 text-[15px] font-medium text-text-secondary rounded-xl transition-colors hover:text-foreground hover:bg-gray-50"
+                  className="px-3 py-2.5 text-[15px] font-medium text-text-secondary rounded-xl transition-colors hover:text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   {link.label}
                 </Link>
@@ -302,7 +331,7 @@ export function Navbar() {
                           await signOut();
                           handleLinkClick();
                         }}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 rounded-full border border-red-200 hover:bg-red-50 transition-colors"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 rounded-full border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
                         <LogOut className="h-4 w-4" />
                         Sign Out
@@ -318,7 +347,7 @@ export function Navbar() {
                       className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-primary rounded-full border border-primary/20 bg-primary/5 cursor-pointer"
                     >
                       <LogIn className="h-4 w-4" />
-                      Login / Sign Up
+                      Login
                     </button>
                   )}
                 </>
@@ -329,8 +358,8 @@ export function Navbar() {
 
         {/* Mobile user dropdown (shown when avatar tapped) */}
         {userMenuOpen && user && (
-          <div className="lg:hidden absolute right-4 top-16 w-56 bg-white rounded-2xl shadow-xl shadow-black/[0.08] border border-gray-100 py-2 z-50 font-sans">
-            <div className="px-4 py-2 border-b border-gray-100">
+          <div className="lg:hidden absolute right-4 top-16 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-black/[0.08] dark:shadow-black/[0.3] border border-gray-100 dark:border-gray-700 py-2 z-50 font-sans">
+            <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
               <p className="text-sm font-semibold text-foreground truncate">
                 {user.displayName || "User"}
               </p>
@@ -342,7 +371,7 @@ export function Navbar() {
               <Link
                 href="/admin"
                 onClick={() => setUserMenuOpen(false)}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-primary-light transition-colors font-semibold border-b border-gray-50"
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-primary-light transition-colors font-semibold border-b border-gray-50 dark:border-gray-700"
               >
                 <Compass className="h-4 w-4" />
                 Admin Dashboard
@@ -354,7 +383,7 @@ export function Navbar() {
                 await signOut();
                 setUserMenuOpen(false);
               }}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
               <LogOut className="h-4 w-4" />
               Sign Out

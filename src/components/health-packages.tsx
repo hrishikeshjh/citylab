@@ -9,7 +9,7 @@ export function HealthPackages() {
   return (
     <section
       id="packages"
-      className="section-padding bg-white"
+      className="section-padding bg-white dark:bg-gray-900"
       aria-labelledby="packages-heading"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -42,10 +42,10 @@ export function HealthPackages() {
           {healthPackages.map((pkg, index) => (
             <motion.div
               key={pkg.name}
-              className={`relative flex flex-col p-6 rounded-2xl border transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] hover:-translate-y-0.5 ${
+              className={`relative flex flex-col p-6 rounded-2xl border transition-all duration-200 hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/[0.2] hover:-translate-y-0.5 ${
                 pkg.popular
                   ? "border-primary bg-primary-light shadow-md"
-                  : "border-border bg-white hover:border-primary/20"
+                  : "border-border bg-white dark:bg-gray-800 hover:border-primary/20"
               }`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -75,7 +75,7 @@ export function HealthPackages() {
                 <span className="text-sm text-text-secondary line-through">
                   ₹{pkg.originalPrice.toLocaleString("en-IN")}
                 </span>
-                <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
                   {Math.round(
                     ((pkg.originalPrice - pkg.price) / pkg.originalPrice) * 100
                   )}
@@ -100,11 +100,7 @@ export function HealthPackages() {
               <div className="mt-6 flex gap-3">
                 <Link
                   href="#contact"
-                  className={`flex-1 text-center px-4 py-2.5 text-sm font-semibold rounded-full transition-all duration-200 ${
-                    pkg.popular
-                      ? "bg-primary text-white hover:bg-primary-hover hover:shadow-md"
-                      : "bg-primary text-white hover:bg-primary-hover hover:shadow-md"
-                  }`}
+                  className="flex-1 text-center px-4 py-2.5 text-sm font-semibold rounded-full transition-all duration-200 bg-primary text-white hover:bg-primary-hover hover:shadow-md"
                 >
                   Book Now
                 </Link>

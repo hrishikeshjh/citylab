@@ -47,7 +47,7 @@ export function Testimonials() {
   return (
     <section
       id="testimonials"
-      className="section-padding bg-white"
+      className="section-padding bg-white dark:bg-gray-900"
       aria-labelledby="testimonials-heading"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -100,7 +100,7 @@ export function Testimonials() {
                           className={`h-4 w-4 ${
                             i < testimonial.rating
                               ? "text-amber-400 fill-amber-400"
-                              : "text-gray-200"
+                              : "text-gray-200 dark:text-gray-600"
                           }`}
                         />
                       ))}

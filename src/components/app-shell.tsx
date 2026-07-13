@@ -36,9 +36,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Loading Screen (Premium, warm theme spinner)
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center transition-colors">
         <div className="relative flex items-center justify-center">
-          <div className="h-16 w-16 rounded-full border-4 border-orange-100 border-t-primary animate-spin" />
+          <div className="h-16 w-16 rounded-full border-4 border-orange-100 dark:border-orange-900/30 border-t-primary animate-spin" />
           <div className="absolute text-primary font-bold text-lg">C</div>
         </div>
         <span className="mt-4 text-sm font-semibold tracking-wide text-foreground uppercase animate-pulse">
@@ -67,4 +67,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
