@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Menu, X, Phone, LogOut, LogIn, Compass, Moon, Sun, Monitor } from "lucide-react";
+import { Menu, X, Phone, LogOut, LogIn, Moon, Sun, Monitor } from "lucide-react";
 import { navLinks } from "@/lib/data";
 import { useAuth } from "@/lib/auth-context";
 import { useModal } from "@/lib/modal-context";
@@ -14,7 +14,7 @@ export function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const { user, isAdmin, loading, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { openLoginModal } = useModal();
   const { theme, resolvedTheme, toggleTheme } = useTheme();
 
@@ -175,16 +175,7 @@ export function Navbar() {
                             {user.email}
                           </p>
                         </div>
-                        {isAdmin && (
-                          <Link
-                            href="/admin"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-primary-light transition-colors font-semibold border-b border-gray-50 dark:border-gray-700"
-                          >
-                            <Compass className="h-4 w-4" />
-                            Admin Dashboard
-                          </Link>
-                        )}
+
                         <button
                           type="button"
                           onClick={async () => {
@@ -315,16 +306,7 @@ export function Navbar() {
                 <>
                   {user ? (
                     <div className="flex flex-col gap-2">
-                      {isAdmin && (
-                        <Link
-                          href="/admin"
-                          onClick={handleLinkClick}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-primary border border-primary/20 bg-primary/5 rounded-full"
-                        >
-                          <Compass className="h-4 w-4" />
-                          Admin Dashboard
-                        </Link>
-                      )}
+
                       <button
                         type="button"
                         onClick={async () => {
@@ -367,16 +349,7 @@ export function Navbar() {
                 {user.email}
               </p>
             </div>
-            {isAdmin && (
-              <Link
-                href="/admin"
-                onClick={() => setUserMenuOpen(false)}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-primary-light transition-colors font-semibold border-b border-gray-50 dark:border-gray-700"
-              >
-                <Compass className="h-4 w-4" />
-                Admin Dashboard
-              </Link>
-            )}
+
             <button
               type="button"
               onClick={async () => {

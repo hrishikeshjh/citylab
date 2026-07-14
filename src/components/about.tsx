@@ -1,56 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { motion, useInView } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
-import { stats } from "@/lib/data";
-
-function AnimatedCounter({
-  target,
-  suffix = "",
-}: {
-  target: string;
-  suffix?: string;
-}) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true });
-  const [count, setCount] = useState(0);
-
-  // Extract numeric value and suffix from target string
-  const numericMatch = target.match(/^([\d,]+)/);
-  const numericValue = numericMatch
-    ? parseInt(numericMatch[1].replace(/,/g, ""), 10)
-    : 0;
-  const textSuffix = target.replace(/^[\d,]+/, "");
-
-  useEffect(() => {
-    if (!isInView) return;
-
-    const duration = 1500;
-    const steps = 40;
-    const increment = numericValue / steps;
-    let current = 0;
-    let step = 0;
-
-    const timer = setInterval(() => {
-      step++;
-      current = Math.min(Math.round(increment * step), numericValue);
-      setCount(current);
-      if (step >= steps) clearInterval(timer);
-    }, duration / steps);
-
-    return () => clearInterval(timer);
-  }, [isInView, numericValue]);
-
-  const formattedCount = count.toLocaleString("en-IN");
-
-  return (
-    <span ref={ref}>
-      {formattedCount}
-      {textSuffix}
-    </span>
-  );
-}
+import { motion } from "framer-motion";
 
 export function About() {
   return (
@@ -121,29 +72,6 @@ export function About() {
             </div>
           </motion.div>
         </div>
-
-        {/* Statistics */}
-        <motion.div
-          className="mt-16 grid grid-cols-2 lg:grid-cols-4 gap-6"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="text-center p-6 rounded-2xl bg-primary-light"
-            >
-              <div className="text-3xl sm:text-4xl font-bold text-primary">
-                <AnimatedCounter target={stat.value} />
-              </div>
-              <div className="mt-1 text-sm text-text-secondary font-medium">
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </motion.div>
       </div>
     </section>
   );

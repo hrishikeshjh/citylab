@@ -7,10 +7,6 @@ export interface QuickService {
   href: string;
 }
 
-export interface Stat {
-  value: string;
-  label: string;
-}
 
 export interface WhyChooseItem {
   icon: string;
@@ -114,12 +110,6 @@ export const quickServices: QuickService[] = [
   },
 ];
 
-export const stats: Stat[] = [
-  { value: "15+", label: "Years of Service" },
-  { value: "50,000+", label: "Patients Served" },
-  { value: "300+", label: "Diagnostic Tests" },
-  { value: "98%", label: "Patient Satisfaction" },
-];
 
 export const whyChooseItems: WhyChooseItem[] = [
   {

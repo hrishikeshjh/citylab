@@ -19,19 +19,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, isGuest, loading } = useAuth();
   const { openLoginModal } = useModal();
   const isLoginPage = pathname === "/login";
-  const isAdminPage = pathname.startsWith("/admin");
   const isPatientDashboard = user !== null && pathname === "/";
-  const isExcludedPage = isLoginPage || isAdminPage || isPatientDashboard;
+  const isExcludedPage = isLoginPage || isPatientDashboard;
 
   // Auto-launch Login Modal on website startup if unauthenticated and not skipped
   useEffect(() => {
-    if (!loading && !user && !isLoginPage && !isAdminPage) {
+    if (!loading && !user && !isLoginPage) {
       const skipped = sessionStorage.getItem("citylab_modal_skipped");
       if (skipped !== "true") {
         openLoginModal();
       }
     }
-  }, [user, loading, isLoginPage, isAdminPage, openLoginModal]);
+  }, [user, loading, isLoginPage, openLoginModal]);
 
   // Loading Screen (Premium, warm theme spinner)
   if (loading) {

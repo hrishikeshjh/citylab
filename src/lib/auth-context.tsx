@@ -24,7 +24,6 @@ import { auth, googleProvider } from "@/lib/firebase";
 interface AuthContextValue {
   user: User | null;
   isGuest: boolean;
-  isAdmin: boolean;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -39,36 +38,12 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const ADMIN_EMAILS_STR = process.env.NEXT_PUBLIC_ADMIN_EMAILS || "admin@citylab.com,admin@example.com,hrishikesh@citylab.com,hrishikesh@example.com";
-const ADMIN_EMAILS = ADMIN_EMAILS_STR.split(",").map((email) => email.trim().toLowerCase());
-
 /* --- Provider ----------------------------------------------------------- */
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isGuest, setIsGuest] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // Sync user in MongoDB on login/signup
-  const syncUserInDatabase = async (firebaseUser: User) => {
-    try {
-      await fetch("/api/users/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
-          photoURL: firebaseUser.photoURL || "",
-        }),
-      });
-    } catch (err) {
-      console.error("Error registering user in MongoDB:", err);
-    }
-  };
 
   // Listen to auth state
   useEffect(() => {
@@ -76,11 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(firebaseUser);
       if (firebaseUser) {
         setIsGuest(false);
-        const email = firebaseUser.email?.toLowerCase() || "";
-        setIsAdmin(ADMIN_EMAILS.includes(email));
-        syncUserInDatabase(firebaseUser);
-      } else {
-        setIsAdmin(false);
       }
       setLoading(false);
     });
@@ -110,8 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string, name: string) => {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: name });
-      // Force profile refresh by syncing manually
-      await syncUserInDatabase(cred.user);
     },
     [],
   );
@@ -126,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOutUser = useCallback(async () => {
     await firebaseSignOut(auth);
     setIsGuest(false);
-    setIsAdmin(false);
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("citylab_guest");
     }
@@ -137,7 +104,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isGuest,
-        isAdmin,
         loading,
         signInWithGoogle,
         signInWithEmail,
